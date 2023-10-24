@@ -46,7 +46,8 @@ async def upload_csv(file: UploadFile):
         if not line:
             # End of File
             break
-        insert_query = f"INSERT INTO {table_name} ({attribute_names}) VALUES ({line})"
+        formatted_values = ["'{}'".format(item) for item in line.split(',')]
+        insert_query = f"INSERT INTO {table_name} ({attribute_names}) VALUES ({', '.join(formatted_values)})"
         cursor.execute(insert_query)
         queries.append(insert_query)
 
