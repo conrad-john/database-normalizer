@@ -3,6 +3,8 @@ import sqlite3
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import List
 
+from core.dependency import Dependency
+
 app = FastAPI(
     title="Database Normalizer API",
     description="Class project for CS5300, spins up a FastAPI application inside a Docker container with endpoints for taking in a database schema, determining its normal form, and generating SQL queries to achieve a specified higher level of normalization.",
@@ -65,8 +67,8 @@ async def upload_csv(file: UploadFile):
 
     return {"message": f"{file.filename} successfully parsed and put into in-memory database {table_name} with {records} records found.", "attribute_names": attribute_strings, "queries_ran": queries}
 
-@app.post("/add-dependency/")
-async def add_dependency(input: str, attribute_names: List[str]):
+@app.post("/add-dependency/", response_model=Dependency)
+async def add_dependency(input: str, attribute_names: List[str]) -> Dependency:
     """Add dependencies for the relation in the format 'X -> Y, ..., Z'"""
     # Input Validation
     if not input:
@@ -89,6 +91,9 @@ async def add_dependency(input: str, attribute_names: List[str]):
         if child.strip() not in attribute_names:
             raise HTTPException(status_code=400, detail=f"{child} attribute name was not present in the list of attributes built from the CSV. Please check the spelling of your dependencies against your CSV.")
 
-    dependency = {"parent": parent, "children": children}
+    dependency = Dependency(parent=parent, children=children)
 
-    return {"input string": input, "dependency": dependency}
+    return dependency
+
+# @app.get("/current-normal-form/")
+# async def get_current_normal_form()
