@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from typing import List
 
 app = FastAPI(
     title="Database Normalizer API",
@@ -41,6 +42,7 @@ async def upload_csv(file: UploadFile):
     queries.append(create_table_query)
 
     # Insert each record provided into the table we just created
+    records = 0
     while True:
         line = file.file.readline().decode().strip()
         if not line:
@@ -50,6 +52,7 @@ async def upload_csv(file: UploadFile):
         insert_query = f"INSERT INTO {table_name} ({attribute_names}) VALUES ({', '.join(formatted_values)})"
         cursor.execute(insert_query)
         queries.append(insert_query)
+        records += 1
 
     # Commit the Changes to the Database
     connection.commit()
@@ -57,5 +60,35 @@ async def upload_csv(file: UploadFile):
     # Close the Database Connection - this should remove the in-memory database
     connection.close()
 
-    return {"queries_ran": queries}
-    #return {"filename": file.filename, "content_type": file.content_type}
+    # Create the list of strings necessary for the next endpoint - POST Add-Dependency
+    attribute_strings = attribute_names.split(',')
+
+    return {"message": f"{file.filename} successfully parsed and put into in-memory database {table_name} with {records} records found.", "attribute_names": attribute_strings, "queries_ran": queries}
+
+@app.post("/add-dependency/")
+async def add_dependency(input: str, attribute_names: List[str]):
+    """Add dependencies for the relation in the format 'X -> Y, ..., Z'"""
+    # Input Validation
+    if not input:
+        raise HTTPException(status_code=400, detail=f"No Input String Provided for Dependency.")
+    if '->' not in input:
+        raise HTTPException(status_code=400, detail=f"Input string for dependency was not in required format. Examples: 'X -> Y', 'X -> Y, Z'")
+    
+    split_input = input.split('->')
+    if len(split_input) > 2:
+        raise HTTPException(status_code=400, detail=f"This application does not support the input of multiple dependency chains (e.g. X -> Y -> Z). Please separate dependencies.")
+    
+    parent = split_input[0].strip()
+    children_string = split_input[1]
+    children = children_string.replace(" ", "").split(',')
+
+    if parent not in attribute_names:
+        raise HTTPException(status_code=400, detail=f"{parent} attribute name was not present in the list of attributes built from the CSV. Please check the spelling of your dependencies against your CSV.")
+
+    for child in children:
+        if child.strip() not in attribute_names:
+            raise HTTPException(status_code=400, detail=f"{child} attribute name was not present in the list of attributes built from the CSV. Please check the spelling of your dependencies against your CSV.")
+
+    dependency = {"parent": parent, "children": children}
+
+    return {"input string": input, "dependency": dependency}
