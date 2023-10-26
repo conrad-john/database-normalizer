@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from typing import List
 
 from core.dependency import Dependency
@@ -9,6 +9,24 @@ app = FastAPI(
     title="Database Normalizer API",
     description="Class project for CS5300, spins up a FastAPI application inside a Docker container with endpoints for taking in a database schema, determining its normal form, and generating SQL queries to achieve a specified higher level of normalization.",
 )
+
+@app.post("/normalize-database/")
+async def normalize_database(file: UploadFile, 
+                             dependencies: List[str], 
+                             target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF']),
+                             detect_current_normal_form: str = Query('Yes', enum=['Yes', 'No'])):
+
+    upload_result = await upload_csv(file)
+
+    return {"file_name": file.filename,
+            "dependencies": dependencies,
+            "target_NF": target_normal_form,
+            "current_NF": detect_current_normal_form}
+
+# @app.get("/test/")
+# async def test(target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF'])):
+#     return {"selected": target_normal_form}
+
 
 @app.post("/upload-csv/")
 async def upload_csv(file: UploadFile):
