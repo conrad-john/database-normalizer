@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class Dependency(BaseModel):
-    parent: str = Field(default="X")
-    children: List[str] = Field(default_factory=list, example=["Y", "Z"])
+    parent: Optional[str] = Field(default="X")
+    children: Optional[List[str]] = Field(default_factory=list, example=["Y", "Z"])

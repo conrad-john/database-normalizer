@@ -1,9 +1,10 @@
 import os
 import sqlite3
+from core.relation import Relation
+from core.dependency import Dependency
+from application.parse_csv import parse_csv
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from typing import List
-
-from core.dependency import Dependency
 
 app = FastAPI(
     title="Database Normalizer API",
@@ -16,20 +17,17 @@ async def normalize_database(file: UploadFile,
                              target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF']),
                              detect_current_normal_form: str = Query('Yes', enum=['Yes', 'No'])):
 
-    upload_result = await upload_csv(file)
+    relation = await parse_csv(file)
 
     return {"file_name": file.filename,
+            "relation_name": relation.name,
             "dependencies": dependencies,
             "target_NF": target_normal_form,
             "current_NF": detect_current_normal_form}
 
-# @app.get("/test/")
-# async def test(target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF'])):
-#     return {"selected": target_normal_form}
-
-
+'''
 @app.post("/upload-csv/")
-async def upload_csv(file: UploadFile):
+async def upload_csv(file: UploadFile, response_model=Relation):
     """Upload a CSV file containing the schema and sample data you would like to assess normalization of. It will be parsed and loaded into an in-memory Db."""
 
     # Input Validation
@@ -47,19 +45,10 @@ async def upload_csv(file: UploadFile):
 
     # Read the first line of the file which should contain the attribute names
     attribute_names = file.file.readline().decode().strip()
-    
-    # Create a list of SQL queries to output
-    queries = []
 
     # Initialize in-memory SQLite Database
     connection = sqlite3.connect(':memory:')
     cursor = connection.cursor()
-
-    # Create a temporary relation with the given attribute names
-    table_name = "TemporaryRelation"
-    create_table_query = f"CREATE TABLE {table_name} ({attribute_names})"
-    cursor.execute(create_table_query)
-    queries.append(create_table_query)
 
     # Insert each record provided into the table we just created
     records = 0
@@ -71,7 +60,6 @@ async def upload_csv(file: UploadFile):
         formatted_values = ["'{}'".format(item) for item in line.split(',')]
         insert_query = f"INSERT INTO {table_name} ({attribute_names}) VALUES ({', '.join(formatted_values)})"
         cursor.execute(insert_query)
-        queries.append(insert_query)
         records += 1
 
     # Commit the Changes to the Database
@@ -112,6 +100,6 @@ async def add_dependency(input: str, attribute_names: List[str]) -> Dependency:
     dependency = Dependency(parent=parent, children=children)
 
     return dependency
-
+'''
 # @app.get("/current-normal-form/")
 # async def get_current_normal_form()
