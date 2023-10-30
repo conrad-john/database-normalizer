@@ -1,5 +1,6 @@
 import os
 from core.attribute import Attribute
+from core.attribute_factory import AttributeFactory
 from core.relation import Relation
 from fastapi import UploadFile, HTTPException
 
@@ -37,6 +38,7 @@ async def parse_csv(file: UploadFile) -> Relation:
             break
     
     for index, attribute_name in enumerate(attribute_names):
-        relation.attributes.append(Attribute(name=attribute_name.strip(), value=relation.tuples[0][index]))
+        attribute = AttributeFactory.create_attribute(name=attribute_name.strip(), value=relation.tuples[0][index])
+        relation.attributes.append(attribute)
 
-    return Relation
+    return relation

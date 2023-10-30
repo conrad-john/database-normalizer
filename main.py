@@ -1,8 +1,8 @@
-import os
-import sqlite3
+import logging
 from core.relation import Relation
 from core.dependency import Dependency
 from application.parse_csv import parse_csv
+from application.parse_dependencies import parse_dependencies
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from typing import List
 
@@ -13,14 +13,18 @@ app = FastAPI(
 
 @app.post("/normalize-database/")
 async def normalize_database(file: UploadFile, 
-                             dependencies: List[str], 
+                             dependencies_input: List[str], 
                              target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF']),
                              detect_current_normal_form: str = Query('Yes', enum=['Yes', 'No'])):
 
+    print("\nStarting to Parse CSV file.\n")
     relation = await parse_csv(file)
+    print(f"\nFinished parsing CSV file.\n{relation.to_json()}\n")
+
+    dependencies = await parse_dependencies(relation, dependencies_input)
 
     return {"file_name": file.filename,
-            "relation_name": relation.name,
+            "relation": relation,
             "dependencies": dependencies,
             "target_NF": target_normal_form,
             "current_NF": detect_current_normal_form}
