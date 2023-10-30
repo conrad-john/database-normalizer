@@ -5,6 +5,7 @@ from core.relation import Relation
 from fastapi import UploadFile, HTTPException
 
 async def parse_csv(file: UploadFile) -> Relation:
+
      # Input Validation
     if not file.filename:
         raise HTTPException(status_code=400, detail="No File Provided.")
@@ -32,11 +33,13 @@ async def parse_csv(file: UploadFile) -> Relation:
     # Insert each record provided into the table we just created
     while True:
         line = file.file.readline().decode().strip()
-        relation.tuples.append(line.split(','))
+        if len(line) > 0:
+            relation.tuples.append(line.split(','))
         if not line:
             # End of File
             break
     
+    # Parse the list of attributes into attribute objects containing name and a corresponding SQL data type for the relation create query
     for index, attribute_name in enumerate(attribute_names):
         attribute = AttributeFactory.create_attribute(name=attribute_name.strip(), value=relation.tuples[0][index])
         relation.attributes.append(attribute)

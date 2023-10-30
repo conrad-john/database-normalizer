@@ -18,22 +18,18 @@ class AttributeFactory:
         if value in ("true", "false", "yes", "no", "on", "off", "t", "f"):
             return "boolean"
         try:
-            int(value, 2)
-            return f"binary({len(value)+8})"
+            int(value)
+            return "int"
         except:
             try:
-                int(value)
-                return "int"
+                float(value)
+                return "float"
             except:
+                if is_serialized_date(value):
+                    return "datetime"
                 try:
-                    float(value)
-                    return "float"
+                    uuid.UUID(value)
+                    return "UUID"
                 except:
-                    if is_serialized_date(value):
-                        return "datetime"
-                    try:
-                        uuid.UUID(value)
-                        return "UUID"
-                    except:
-                        length = (int(len(value) / 50) + 1) * 50
-                        return f"varchar({length})"
+                    length = (int(len(value) / 50) + 1) * 50
+                    return f"varchar({length})"
