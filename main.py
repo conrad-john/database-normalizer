@@ -14,13 +14,14 @@ app = FastAPI(
 
 @app.post("/normalize-database")
 async def normalize_database(file: UploadFile, 
+                             keys: List[str],
                              dependencies_input: List[str], 
                              target_normal_form: str = Query('1NF', enum=['1NF', '2NF', '3NF', 'BCNF', '4NF', '5NF']),
                              detect_current_normal_form: str = Query('Yes', enum=['Yes', 'No'])):
 
     # Parse the CSV file into a given relation
     print("\nStarting to Parse CSV file.\n")
-    relation = await parse_csv(file)
+    relation = await parse_csv(file, keys)
     print(f"\nFinished parsing CSV file.\n{relation.to_json()}\n")
 
     # Parse out the dependencies into a list of usable objects
