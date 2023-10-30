@@ -15,7 +15,7 @@ class Relation(BaseModel):
         return f"CREATE TABLE {self.name} ({', '.join(attributes_serialized)})"
     
     def to_json(self):
-        # Convert the class isntance to a dictionary
+        # Convert the class instance to a dictionary
         data = self.dict()
         # Serialize the dictionary to JSON
         return json.dumps(data, indent=2)
