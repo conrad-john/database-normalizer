@@ -4,13 +4,21 @@ from core.relation import Relation
 from core.attribute_factory import AttributeFactory
 
 async def determine_normal_form(relation: Relation, dependencies: List[Dependency]) -> str:
-    if isRelationInUNF(relation):
+    if not isRelationIn1NF(relation):
         return "UNF"
-    
-    return ""
+    if not isRelationIn2NF(relation, dependencies):
+        return "1NF"
+    if not isRelationIn3NF(relation, dependencies):
+        return "2NF"
+    if not isRelationInBCNF(relation, dependencies):
+        return "3NF"
+    if not isRelationIn4NF(relation, dependencies):
+        return "BCNF"
+    if not isRelationIn5NF(relation, dependencies):
+        return "4NF"
+    return "5NF"
 
-# UNF - Unnormalized Form
-def isRelationInUNF(relation: Relation) -> bool:
+def isRelationIn1NF(relation: Relation) -> bool:
     # Are all values atomic and are there any duplicate Attribute Names?
     attribute_names = []
     for attribute in relation.attributes:
@@ -38,3 +46,20 @@ def isRelationInUNF(relation: Relation) -> bool:
             if attribute.data_type != data_type:
                 print(f"Relation is in UNF: data type is not consistent in Column '{attribute.name}'. Expected: {attribute.data_type}. Actual: {data_type}")
                 return True
+    
+    return False
+
+def isRelationIn2NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    return False
+
+def isRelationIn3NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    return False
+
+def isRelationInBCNF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    return False
+
+def isRelationIn4NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    return False
+
+def isRelationIn5NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    return False
