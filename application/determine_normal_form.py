@@ -60,7 +60,7 @@ def isRelationIn2NF(relation: Relation, dependencies: List[Dependency]) -> bool:
     for attribute in relation.attributes:
         
         # This for loop checks if there are any attributes which appear as children in our list of depenedencies
-        parent_list = getDeterminingAttributeNames(attribute.name, dependencies)
+        parent_list = getParentAttributes(attribute.name, dependencies)
         if not parent_list or len(parent_list) < 1:
             continue
         
@@ -71,7 +71,7 @@ def isRelationIn2NF(relation: Relation, dependencies: List[Dependency]) -> bool:
 
     return True
 
-def getDeterminingAttributeNames(child_name: str, dependencies: List[Dependency]) -> List[str]:
+def getParentAttributes(child_name: str, dependencies: List[Dependency]) -> List[str]:
     return [dep.parent for dep in dependencies if child_name in dep.children]
 
 def isRelationIn3NF(relation: Relation, dependencies: List[Dependency]) -> bool:
@@ -80,7 +80,7 @@ def isRelationIn3NF(relation: Relation, dependencies: List[Dependency]) -> bool:
     
     for attribute in relation.attributes:
         # Get our list of parents (X where X->Y and Y is our attribute)
-        parent_list = getDeterminingAttributeNames(attribute.name, dependencies)
+        parent_list = getParentAttributes(attribute.name, dependencies)
 
         # Get instances of X where X is not in key
         parents_not_in_keys = [parent for parent in parent_list if parent not in key_list]
@@ -95,7 +95,7 @@ def isRelationIn3NF(relation: Relation, dependencies: List[Dependency]) -> bool:
 
 def isNonKeyParentDeterminedByKey(parent: str, dependencies: List[Dependency], key_list: List[str]) -> bool:
     # Try to go up the chain of dependencies one level
-    grandparent_list = getDeterminingAttributeNames(parent, dependencies)
+    grandparent_list = getParentAttributes(parent, dependencies)
 
     # If nothing determines the parent, return False, we'll catch it in BCNF
     if len(grandparent_list) > 0:
@@ -121,7 +121,7 @@ def isRelationInBCNF(relation: Relation, dependencies: List[Dependency]) -> bool
     
     for attribute in relation.attributes:
         # Get our list of parents (X where X->Y and Y is our attribute)
-        parent_list = getDeterminingAttributeNames(attribute.name, dependencies)
+        parent_list = getParentAttributes(attribute.name, dependencies)
 
         # If there are no parents (nothing determines the given attribute), continue
         if not parent_list or len(parent_list) < 1:
@@ -137,7 +137,55 @@ def isRelationInBCNF(relation: Relation, dependencies: List[Dependency]) -> bool
     return True
 
 def isRelationIn4NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+    # Look for Multi-Valued Dependencies where X -> -> Y
+    for attribute_index, attribute in enumerate(relation.attributes):
+        # Get all children dependent on this attribute
+        children_list = getChildAttributes(attribute.name, dependencies)
+
+        # If there are no child attributes, we can't have any MVD's
+        if not children_list or children_list < 1:
+            continue
+
+        # for each child, create a dictionary: key=attribute.value, value=List[all tuple values]
+        for child in children_list:
+            child_index = 0
+            for i, attribute in enumerate(relation.attributes):
+                if child == attribute.name():
+                    child_index = i
+                    break
+            attribute_values_dict = {}
+            for row in relation.tuples:
+                if row[attribute_index] in attribute_values_dict:
+                    attribute_values_dict[row[attribute_index]].append(row[child_index])
+                else:
+                    attribute_values_dict[row[attribute_index]] = [row[child_index]]
+                    
+            # Is the list longer than 1 for any key? Then there's a MVD
+            for _, value in attribute_values_dict.items():
+                unique_items = list(set(value))
+                if len(unique_items) > 1:
+                    print(f"Relation is in BCNF: There is a multivalue dependency '{attribute.name}->->{child}'.")
+                    return False
+
     return True
 
+def getChildAttributes(parent_name: str, dependencies: List[Dependency]) -> List[str]:
+    return [dep.children for dep in dependencies if parent_name in dep.parent]
+
 def isRelationIn5NF(relation: Relation, dependencies: List[Dependency]) -> bool:
-    return True
+    # Two items are automatically in 5NF
+    if len(relation.attributes) < 3:
+        return True
+    
+    # If every attribute is also part of the keys
+    key_list = [att.name for att in relation.primary_key]
+    attribute_list = [att.name for att in relation.attributes]
+    if sorted(key_list) == sorted(attribute_list):
+        return True
+    
+    # If there is only one dependency in the table which involves every attribute
+    non_key_attributes = [att for att in attribute_list if att not in key_list]
+    if len(dependencies) == 1 and sorted(dependencies[0].parent) == sorted(key_list) and sorted(dependencies[0].children) == sorted(non_key_attributes):
+        return True
+
+    return False
