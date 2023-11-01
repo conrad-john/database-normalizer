@@ -134,6 +134,15 @@ async def normalize_to_1NF(relation: Relation) -> List[Relation]:
             deduped_rows.append(t)
         relation.tuples = deduped_rows
 
+    # Is there a Primary Key? If not, set one
+    if len(relation.primary_key) < 1:
+        keys = []
+        for dependency in relation.dependencies:
+            candidate_key = dependency.parent
+            keys.append([attribute for attribute in relation.attributes if attribute.name == candidate_key])
+        if len(keys) < 1:
+            keys = relation.attributes
+
     return [relation]
 
 async def normalize_to_2NF(relation: Relation) -> List[Relation]:
