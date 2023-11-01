@@ -6,6 +6,7 @@ from application.parse_dependencies import parse_dependencies
 from application.determine_normal_form import determine_normal_form
 from application.parse_txt import parse_text_file
 from application.normalize import normalize
+from application.sql_builder import get_table_creation_queries
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from typing import List
 
@@ -40,7 +41,7 @@ async def normalize_database(sample_data_csv: UploadFile,
     print(f"Finished parsing Dependencies.{[dependency.to_json() for dependency in relation.dependencies]}")
 
     # Retrieve the Current Normal Form of the input relation if requested
-    cnf = None
+    cnf = "N/A"
     if detect_current_normal_form == 'Yes':
         print("\nGetting the current normal form of the relation.")
         cnf = await determine_normal_form(relation)
@@ -51,7 +52,7 @@ async def normalize_database(sample_data_csv: UploadFile,
     relations = normalize(relation, target_normal_form, cnf)
     print(f"Finished normalizing relation.")
 
-    return {"file_name": sample_data_csv.filename,
-            "relation": relation,
-            "target_NF": target_normal_form,
-            "current_NF": cnf}
+    queries = get_table_creation_queries(relations)
+
+    return {"InputTableNormalForm": cnf,
+            "SQL Queries": queries}
