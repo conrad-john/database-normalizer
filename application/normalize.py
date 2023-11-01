@@ -5,16 +5,16 @@ from core.attribute_factory import AttributeFactory
 from core.attribute import Attribute
 from application.determine_normal_form import *
 
-async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List[Relation]:
+def normalize(relation: Relation, target_nf: str, current_nf: str) -> List[Relation]:
     # Convert/Get NF Integers for easier comparison
     target = get_nf_integer(target_nf)
     current = get_nf_integer(determine_normal_form(relation)) if current_nf == "N/A" else get_nf_integer(current_nf)
-    
-    if target <= current:
-        print(f"The Relationship is already normalized to {current_nf} which is equal to or higher than the requested {target_nf}.")
-        return [relation]
-    
+
     subrelations = [relation]
+
+    if target <= current:
+        print(f"The Relationship is already normalized to {get_nf_string(current)} which is equal to or higher than the requested {target_nf}.")
+        return subrelations
     
     # Normalize from UNF to 1NF
     if target >= 1 and current < 1:
@@ -24,7 +24,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(await normalize_to_1NF(relation))
+                normalized_subrelations.extend(normalize_to_1NF(relation))
         subrelations = normalized_subrelations
         current = 1
 
@@ -39,7 +39,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 continue
             else:
                 print(f"In normalize.py, subrelation {relation.name} is not in 2NF. Normalizing before appending to normalized_subrelations.")
-                normalized_subrelations.append(await normalize_to_2NF(relation))
+                normalized_subrelations.extend(normalize_to_2NF(relation))
         subrelations = normalized_subrelations
         current = 2
 
@@ -54,7 +54,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 continue
             else:
                 print(f"In normalize.py, subrelation {relation.name} is not in 3NF. Normalizing before appending to normalized_subrelations.")
-                normalized_subrelations.append(await normalize_to_3NF(relation))
+                normalized_subrelations.extend(normalize_to_3NF(relation))
         subrelations = normalized_subrelations
         current = 3
 
@@ -69,7 +69,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 continue
             else:
                 print(f"In normalize.py, subrelation {relation.name} is not in BCNF. Normalizing before appending to normalized_subrelations.")
-                normalized_subrelations.append(await normalize_to_BCNF(relation))
+                normalized_subrelations.extend(normalize_to_BCNF(relation))
         subrelations = normalized_subrelations
         current = 4
 
@@ -84,20 +84,20 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 continue
             else:
                 print(f"In normalize.py, subrelation {relation.name} is not in 4NF. Normalizing before appending to normalized_subrelations.")
-                normalized_subrelations.append(await normalize_to_4NF(relation))
+                normalized_subrelations.extend(normalize_to_4NF(relation))
         subrelations = normalized_subrelations
         current = 5
 
     # Normalize from 4NF to 5NF
     if target >= 6 and current < 6:
         print(f"In normalize.py, normalizing {len(subrelations)} to 5NF.")
-        normalized_subrelations = await normalize_to_5NF(subrelations)
+        normalized_subrelations = normalize_to_5NF(subrelations)
         subrelations = normalized_subrelations
         current = 6
 
     return subrelations
 
-async def normalize_to_1NF(relation: Relation) -> List[Relation]:
+def normalize_to_1NF(relation: Relation) -> List[Relation]:
     # Are all values atomic and are there any duplicate Attribute Names?
     attribute_names = []
     for attribute in relation.attributes:
@@ -146,17 +146,17 @@ async def normalize_to_1NF(relation: Relation) -> List[Relation]:
         keys = []
         for dependency in relation.dependencies:
             candidate_key = dependency.parent
-            keys.append([attribute for attribute in relation.attributes if attribute.name == candidate_key])
+            keys.extend([attribute for attribute in relation.attributes if attribute.name == candidate_key])
         if len(keys) < 1:
             keys = relation.attributes
 
     return [relation]
 
-async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
+def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
     # Look for partial dependencies in each relation and split the relation accordingly
 
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = await normalize(input_relation, "1NF", "N/A")
+    lower_normalized_relations = normalize(input_relation, "1NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -206,10 +206,10 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = await normalize(split_relation, "2NF", "N/A")
+            normalized_split_relations = normalize(split_relation, "2NF", "N/A")
 
             # Add the split relation to normalized_relations
-            normalized_relations.append(normalized_split_relations)
+            normalized_relations.extend(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
@@ -220,11 +220,11 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
 
     return normalized_relations
 
-async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
+def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
     # Look for partial dependencies in each relation and split the relation accordingly
 
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = await normalize(input_relation, "2NF", "N/A")
+    lower_normalized_relations = normalize(input_relation, "2NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -269,10 +269,10 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = await normalize(split_relation, "3NF", "N/A")
+            normalized_split_relations = normalize(split_relation, "3NF", "N/A")
 
             # Add the split relation to normalized_relations
-            normalized_relations.append(normalized_split_relations)
+            normalized_relations.extend(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
@@ -283,9 +283,9 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
     
     return normalized_relations
 
-async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
+def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = await normalize(input_relation, "3NF", "N/A")
+    lower_normalized_relations = normalize(input_relation, "3NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -324,10 +324,10 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = await normalize(split_relation, "BCNF", "N/A")
+            normalized_split_relations = normalize(split_relation, "BCNF", "N/A")
 
             # Add the split relation to normalized_relations
-            normalized_relations.append(normalized_split_relations)
+            normalized_relations.extend(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
@@ -338,9 +338,9 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
     
     return normalized_relations
 
-async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
+def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = await normalize(input_relation, "BCNF", "N/A")
+    lower_normalized_relations = normalize(input_relation, "BCNF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -373,10 +373,10 @@ async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = await normalize(split_relation, "4NF", "N/A")
+            normalized_split_relations = normalize(split_relation, "4NF", "N/A")
             
             # Add the split relation to normalized_relations
-            normalized_relations.append(normalized_split_relations)
+            normalized_relations.extend(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
@@ -421,11 +421,11 @@ def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[At
 
     return True
 
-async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
+def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
     lower_normalized_relations = []
     for relation in relations:
-        lower_normalized_relations.append(await normalize(relation, "4NF", "N/A"))
+        lower_normalized_relations.extend(normalize(relation, "4NF", "N/A"))
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -448,7 +448,7 @@ async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
                 normalized_relations.append(relation)
                 break
             
-            split_key_name = join_dependency[0]
+            split_key_name = join_dependency[0].parent
             split_key = [att for att in relation.attributes if att.name == split_key_name]
             split_dependency = []
             stepchildren_attributes = [relation.primary_key[0]]
@@ -463,10 +463,8 @@ async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
             )
 
             # Automatically in 5NF based on this criteria - normalize the split relation to the desired normal form
-            # normalized_split_relations = normalize(split_relation, "5CNF", "N/A")
-
             # Add the split relation to normalized_relations
-            normalized_relations.append(normalized_split_relations)
+            normalized_relations.extend(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in split_key_name]
@@ -474,6 +472,21 @@ async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
         normalized_relations.append(relation)
 
     return normalized_relations
+
+def get_nf_string(nf: int) -> str:
+    nf_dict = {
+        0:"UNF",
+        1:"1NF",
+        2:"2NF",
+        3:"3NF",
+        4:"BCNF",
+        5:"4NF",
+        6:"5NF",
+    }
+    try:
+        return nf_dict[nf]
+    except Exception as e:
+        raise ValueError(f"Invalid normal form: {nf}. The valid normal forms are {', '.join(nf_dict.keys())}. Exception: {e}")
 
 def get_nf_integer(nf: str) -> int:
     nf_dict = {

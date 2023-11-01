@@ -5,7 +5,7 @@ from core.attribute_factory import AttributeFactory
 from core.relation import Relation
 from fastapi import UploadFile, HTTPException
 
-async def parse_csv(file: UploadFile, keys: List[str]) -> Relation:
+def parse_csv(file: UploadFile, keys: List[str]) -> Relation:
 
      # Input Validation
     if not file.filename:

@@ -5,7 +5,7 @@ from core.relation import Relation
 from core.attribute_factory import AttributeFactory
 from core.attribute import Attribute
 
-async def determine_normal_form(relation: Relation) -> str:
+def determine_normal_form(relation: Relation) -> str:
     if not isRelationIn1NF(relation):
         return "UNF"
     if not isRelationIn2NF(relation):

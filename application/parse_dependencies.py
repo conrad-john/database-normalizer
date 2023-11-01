@@ -3,7 +3,7 @@ from core.dependency import Dependency
 from core.relation import Relation
 from fastapi import HTTPException
 
-async def parse_dependencies(R: Relation, dependency_inputs: List[str]) -> List[Dependency]:
+def parse_dependencies(R: Relation, dependency_inputs: List[str]) -> List[Dependency]:
     # Input Validation
     if not dependency_inputs:
         raise HTTPException(status_code=400, detail=f"No Input String Provided for Dependency.")

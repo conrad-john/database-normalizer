@@ -32,24 +32,24 @@ async def normalize_database(sample_data_csv: UploadFile,
 
     # Parse the CSV file into a given relation
     print("Starting to Parse CSV file.")
-    relation = await parse_csv(sample_data_csv, keys_list)
+    relation = parse_csv(sample_data_csv, keys_list)
     print(f"Finished parsing CSV file. Relation: {relation.to_json()}")
 
     # Parse out the dependencies into a list of usable objects
     print("Starting to Parse Dependencies.")
-    relation.dependencies = await parse_dependencies(relation, dependencies_list)
+    relation.dependencies = parse_dependencies(relation, dependencies_list)
     print(f"Finished parsing Dependencies.{[dependency.to_json() for dependency in relation.dependencies]}")
 
     # Retrieve the Current Normal Form of the input relation if requested
     cnf = "N/A"
     if detect_current_normal_form == 'Yes':
         print("\nGetting the current normal form of the relation.")
-        cnf = await determine_normal_form(relation)
+        cnf = determine_normal_form(relation)
         print(f"\nCurrent Normal Form: {cnf}")
 
     # Normalize the input Relation to the target specification
     print(f"Normalizing input relation to {target_normal_form}.")
-    relations = await normalize(relation, target_normal_form, cnf)
+    relations = normalize(relation, target_normal_form, cnf)
     print(f"Finished normalizing input relation. Generated {len(relations)} normalized subrelations.")
 
     queries = get_table_creation_queries(relations)
