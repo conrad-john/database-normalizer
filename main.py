@@ -40,7 +40,7 @@ async def normalize_database(sample_data_csv: UploadFile,
     print(f"Finished parsing Dependencies.{[dependency.to_json() for dependency in relation.dependencies]}")
 
     # Retrieve the Current Normal Form of the input relation if requested
-    cnf = "N/A"
+    cnf = None
     if detect_current_normal_form == 'Yes':
         print("\nGetting the current normal form of the relation.")
         cnf = await determine_normal_form(relation)

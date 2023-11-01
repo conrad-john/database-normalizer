@@ -3,12 +3,12 @@ from core.dependency import Dependency
 from core.relation import Relation
 from core.attribute_factory import AttributeFactory
 from core.attribute import Attribute
-from application.determine_normal_form import determine_normal_form, isRelationIn1NF, isRelationIn2NF, isRelationIn3NF, isRelationInBCNF, isRelationIn4NF, isRelationIn5NF
+from application.determine_normal_form import *
 
-async def normalize(relation: Relation, dependencies: List[Dependency], target_nf: str, current_nf: str) -> List[Relation]:
+async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List[Relation]:
     # Convert/Get NF Integers for easier comparison
     target = get_nf_integer(target_nf)
-    current = get_nf_integer(current_nf) if current_nf != "N/A" else get_nf_integer(determine_normal_form(relation))
+    current = get_nf_integer(determine_normal_form(relation)) if current_nf == "N/A" else get_nf_integer(current_nf)
     
     if target <= current:
         print(f"The Relationship is already normalized to {current_nf} which is equal to or higher than {target_nf}.")
@@ -20,7 +20,7 @@ async def normalize(relation: Relation, dependencies: List[Dependency], target_n
     if target >= 1 and current < 1:
         normalized_subrelations = []
         for relation in subrelations:
-            if isRelationIn5NF(relation):
+            if isRelationIn1NF(relation):
                 normalized_subrelations.append(relation)
                 continue
             else:
@@ -145,20 +145,132 @@ async def normalize_to_1NF(relation: Relation) -> List[Relation]:
 
     return [relation]
 
-async def normalize_to_2NF(relation: Relation) -> List[Relation]:
-    raise NotImplementedError()
+async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
+    # Look for partial dependencies in each relation and split the relation accordingly
 
-async def normalize_to_3NF(relation: Relation) -> List[Relation]:
-    raise NotImplementedError()
+    # Ensure relation is normalized to lower normal forms first
+    lower_normalized_relations = normalize(input_relation, "1NF", "N/A")
+        
+    # Initialize Empty Normalized Relations
+    normalized_relations = []
 
-async def normalize_to_BCNF(relation: Relation) -> List[Relation]:
-    raise NotImplementedError()
+    for relation in lower_normalized_relations:
 
-async def normalize_to_4NF(relation: Relation) -> List[Relation]:
-    raise NotImplementedError()
+        # While the relation is not normalized to the desired normal form
+        while not isRelationIn2NF(relation):
 
-async def normalize_to_5NF(relation: Relation) -> List[Relation]:
-    raise NotImplementedError()
+            # Split relation on a condition matching the normalization form
+            parents = [dep.parent for dep in relation.dependencies]
+            key_list = [att.name for att in relation.primary_key]
+            non_key_parents = [parent for parent in parents if parent not in key_list]
+
+            # Add breaking condition in case while condition is faulty
+            if len(non_key_parents) < 1:
+                print(f"Warning: In normalize_to_2NF, something is wrong with the cnf checker. No non-key parents were found. Breaking loop.")
+                break
+
+            split_key_name = non_key_parents[0]
+            split_key = [att for att in relation.attributes if att.name == split_key_name]
+            partial_dependencies = [dep for dep in relation.dependencies if dep.parent == split_key_name]
+            stepchildren_names = [dep.children for dep in partial_dependencies]
+            stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
+
+            split_relation = Relation(
+                name=f"{split_key_name}s",
+                attributes=stepchildren_attributes,
+                tuples=[],
+                primary_key=[split_key],
+                dependencies=[partial_dependencies]
+            )
+
+            # Normalize the split relation to the desired normal form
+            normalized_split_relations = normalize(split_relation, "2NF", "N/A")
+
+            # Add the split relation to normalized_relations
+            normalized_relations.append(normalized_split_relations)
+            
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
+            relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
+    
+    normalized_relations.append(relation)
+    return normalized_relations
+
+async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
+    # Ensure relation is normalized to lower normal forms first
+    lower_normalized_relations = normalize(input_relation, "2NF", "N/A")
+        
+    # Initialize Empty Normalized Relations
+    normalized_relations = []
+
+    for relation in lower_normalized_relations:
+        # While the relation is not normalized to the desired normal form
+        while not isRelationIn3NF(relation):
+            # Split relation on a condition matching the normalization form
+            # Add breaking condition in case while condition is faulty
+            # Normalize the split relation to the desired normal form
+            # Add the split relation to normalized_relations
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            raise NotImplementedError()
+
+    return normalized_relations
+
+async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
+    # Ensure relation is normalized to lower normal forms first
+    lower_normalized_relations = normalize(input_relation, "3NF", "N/A")
+        
+    # Initialize Empty Normalized Relations
+    normalized_relations = []
+
+    for relation in lower_normalized_relations:
+        # While the relation is not normalized to the desired normal form
+        while not isRelationInBCNF(relation):
+            # Split relation on a condition matching the normalization form
+            # Add breaking condition in case while condition is faulty
+            # Normalize the split relation to the desired normal form
+            # Add the split relation to normalized_relations
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            raise NotImplementedError()
+
+    return normalized_relations
+
+async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
+    # Ensure relation is normalized to lower normal forms first
+    lower_normalized_relations = normalize(input_relation, "BCNF", "N/A")
+        
+    # Initialize Empty Normalized Relations
+    normalized_relations = []
+
+    for relation in lower_normalized_relations:
+        # While the relation is not normalized to the desired normal form
+        while not isRelationIn4NF(relation):
+            # Split relation on a condition matching the normalization form
+            # Add breaking condition in case while condition is faulty
+            # Normalize the split relation to the desired normal form
+            # Add the split relation to normalized_relations
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            raise NotImplementedError()
+
+    return normalized_relations
+
+async def normalize_to_5NF(input_relation: Relation) -> List[Relation]:
+    # Ensure relation is normalized to lower normal forms first
+    lower_normalized_relations = normalize(input_relation, "4NF", "N/A")
+        
+    # Initialize Empty Normalized Relations
+    normalized_relations = []
+
+    for relation in lower_normalized_relations:
+        # While the relation is not normalized to the desired normal form
+        while not isRelationIn5NF(relation):
+            # Split relation on a condition matching the normalization form
+            # Add breaking condition in case while condition is faulty
+            # Normalize the split relation to the desired normal form
+            # Add the split relation to normalized_relations
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            raise NotImplementedError()
+
+    return normalized_relations
 
 def get_nf_integer(nf: str) -> int:
     nf_dict = {
