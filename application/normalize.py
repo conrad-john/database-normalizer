@@ -11,7 +11,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
     current = get_nf_integer(determine_normal_form(relation)) if current_nf == "N/A" else get_nf_integer(current_nf)
     
     if target <= current:
-        print(f"The Relationship is already normalized to {current_nf} which is equal to or higher than {target_nf}.")
+        print(f"The Relationship is already normalized to {current_nf} which is equal to or higher than the requested {target_nf}.")
         return [relation]
     
     subrelations = [relation]
@@ -24,61 +24,74 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(normalize_to_1NF(relation))
+                normalized_subrelations.append(await normalize_to_1NF(relation))
         subrelations = normalized_subrelations
         current = 1
 
     # Normalize from 1NF to 2NF
     if target >= 2 and current < 2:
+        print(f"In normalize.py, normalizing {len(subrelations)} to 2NF.")
         normalized_subrelations = []
         for relation in subrelations:
             if isRelationIn2NF(relation):
+                print(f"In normalize.py, subrelation {relation.name} is already in 2NF. Appending to normalized_subrelations.")
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(normalize_to_2NF(relation))
+                print(f"In normalize.py, subrelation {relation.name} is not in 2NF. Normalizing before appending to normalized_subrelations.")
+                normalized_subrelations.append(await normalize_to_2NF(relation))
         subrelations = normalized_subrelations
         current = 2
 
     # Normalize from 2NF to 3NF
     if target >= 3 and current < 3:
+        print(f"In normalize.py, normalizing {len(subrelations)} to 3NF.")
         normalized_subrelations = []
         for relation in subrelations:
             if isRelationIn3NF(relation):
+                print(f"In normalize.py, subrelation {relation.name} is already in 3NF. Appending to normalized_subrelations.")
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(normalize_to_3NF(relation))
+                print(f"In normalize.py, subrelation {relation.name} is not in 3NF. Normalizing before appending to normalized_subrelations.")
+                normalized_subrelations.append(await normalize_to_3NF(relation))
         subrelations = normalized_subrelations
         current = 3
 
     # Normalize from 3NF to BCNF
     if target >= 4 and current < 4:
+        print(f"In normalize.py, normalizing {len(subrelations)} to BCNF.")
         normalized_subrelations = []
         for relation in subrelations:
             if isRelationInBCNF(relation):
+                print(f"In normalize.py, subrelation {relation.name} is already in BCNF. Appending to normalized_subrelations.")
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(normalize_to_BCNF(relation))
+                print(f"In normalize.py, subrelation {relation.name} is not in BCNF. Normalizing before appending to normalized_subrelations.")
+                normalized_subrelations.append(await normalize_to_BCNF(relation))
         subrelations = normalized_subrelations
         current = 4
 
     # Normalize from BCNF to 4NF
     if target >= 5 and current < 5:
+        print(f"In normalize.py, normalizing {len(subrelations)} to 4NF.")
         normalized_subrelations = []
         for relation in subrelations:
             if isRelationIn4NF(relation):
+                print(f"In normalize.py, subrelation {relation.name} is already in 4NF. Appending to normalized_subrelations.")
                 normalized_subrelations.append(relation)
                 continue
             else:
-                normalized_subrelations.append(normalize_to_4NF(relation))
+                print(f"In normalize.py, subrelation {relation.name} is not in 4NF. Normalizing before appending to normalized_subrelations.")
+                normalized_subrelations.append(await normalize_to_4NF(relation))
         subrelations = normalized_subrelations
         current = 5
 
     # Normalize from 4NF to 5NF
     if target >= 6 and current < 6:
-        normalized_subrelations = normalize_to_5NF(subrelations)
+        print(f"In normalize.py, normalizing {len(subrelations)} to 5NF.")
+        normalized_subrelations = await normalize_to_5NF(subrelations)
         subrelations = normalized_subrelations
         current = 6
 
@@ -143,13 +156,13 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
     # Look for partial dependencies in each relation and split the relation accordingly
 
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = normalize(input_relation, "1NF", "N/A")
+    lower_normalized_relations = await normalize(input_relation, "1NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
     for relation in lower_normalized_relations:
-
+        print(f"In normalize.py, checking if relation named '{relation.name}' is in 2NF")
         # While the relation is not normalized to the desired normal form
         while not isRelationIn2NF(relation):
 
@@ -193,7 +206,7 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "2NF", "N/A")
+            normalized_split_relations = await normalize(split_relation, "2NF", "N/A")
 
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
@@ -211,12 +224,13 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
     # Look for partial dependencies in each relation and split the relation accordingly
 
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = normalize(input_relation, "2NF", "N/A")
+    lower_normalized_relations = await normalize(input_relation, "2NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
     for relation in lower_normalized_relations:
+        print(f"In normalize.py, checking if relation named '{relation.name}' is in 3NF")
 
         # While the relation is not normalized to the desired normal form
         while not isRelationIn3NF(relation):
@@ -255,7 +269,7 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "3NF", "N/A")
+            normalized_split_relations = await normalize(split_relation, "3NF", "N/A")
 
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
@@ -271,12 +285,13 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
 
 async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = normalize(input_relation, "3NF", "N/A")
+    lower_normalized_relations = await normalize(input_relation, "3NF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
     for relation in lower_normalized_relations:
+        print(f"In normalize.py, checking if relation named '{relation.name}' is in BCNF")
         
         # While the relation is not normalized to the desired normal form
         while not isRelationInBCNF(relation):
@@ -309,7 +324,7 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "BCNF", "N/A")
+            normalized_split_relations = await normalize(split_relation, "BCNF", "N/A")
 
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
@@ -325,12 +340,13 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
 
 async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = normalize(input_relation, "BCNF", "N/A")
+    lower_normalized_relations = await normalize(input_relation, "BCNF", "N/A")
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
     for relation in lower_normalized_relations:
+        print(f"In normalize.py, checking if relation named '{relation.name}' is in 4NF")
         # While the relation is not normalized to the desired normal form
         while not isRelationIn4NF(relation):
             # Split relation on a condition matching the normalization form
@@ -357,7 +373,7 @@ async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "4NF", "N/A")
+            normalized_split_relations = await normalize(split_relation, "4NF", "N/A")
             
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
@@ -409,12 +425,14 @@ async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
     lower_normalized_relations = []
     for relation in relations:
-        lower_normalized_relations.append(normalize(relation, "4NF", "N/A"))
+        lower_normalized_relations.append(await normalize(relation, "4NF", "N/A"))
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
     for relation in lower_normalized_relations:
+        print(f"In normalize.py, checking if relation named '{relation.name}' is in 5NF")
+
         # While the relation is not normalized to the desired normal form
         while not isRelationIn5NF(relation):
             # Split relation on a condition matching the normalization form

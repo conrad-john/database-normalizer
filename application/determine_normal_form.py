@@ -58,6 +58,7 @@ def isRelationIn1NF(relation: Relation) -> bool:
 def isRelationIn2NF(relation: Relation) -> bool:
     if len(relation.attributes) < 3:
         return True
+    
     # Look for partial dependencies, X->Y where X is a subset of the key
     dependencies = relation.dependencies
     key_list = get_list_of_key_names(relation)
@@ -82,6 +83,7 @@ def getParentAttributes(child_name: str, dependencies: List[Dependency]) -> List
 def isRelationIn3NF(relation: Relation) -> bool:
     if len(relation.attributes) < 3:
         return True
+    
     # Look for Transitive Functional Dependencies where X -> Y -> Z where X is the key but Y is not
     dependencies = relation.dependencies
     key_list = get_list_of_key_names(relation)
