@@ -55,6 +55,8 @@ def isRelationIn1NF(relation: Relation) -> bool:
     return True
 
 def isRelationIn2NF(relation: Relation) -> bool:
+    if len(relation.attributes) < 3:
+        return True
     # Look for partial dependencies, X->Y where X is a subset of the key
     dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
@@ -77,6 +79,8 @@ def getParentAttributes(child_name: str, dependencies: List[Dependency]) -> List
     return [dep.parent for dep in dependencies if child_name in dep.children]
 
 def isRelationIn3NF(relation: Relation) -> bool:
+    if len(relation.attributes) < 3:
+        return True
     # Look for Transitive Functional Dependencies where X -> Y -> Z where X is the key but Y is not
     dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
@@ -119,6 +123,8 @@ def isNonKeyParentDeterminedByKey(parent: str, dependencies: List[Dependency], k
     return False
 
 def isRelationInBCNF(relation: Relation) -> bool:
+    if len(relation.attributes) < 3:
+        return True
     # Look for Non-Trivial Functional Dependencies where X -> Y but X is not part of the keys
     dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
@@ -141,6 +147,9 @@ def isRelationInBCNF(relation: Relation) -> bool:
     return True
 
 def isRelationIn4NF(relation: Relation) -> bool:
+    if len(relation.attributes) < 3:
+        return True
+
     # Look for Multi-Valued Dependencies where X -> -> Y
     dependencies = relation.dependencies
     for attribute_index, attribute in enumerate(relation.attributes):

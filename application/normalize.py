@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from core.dependency import Dependency
 from core.relation import Relation
 from core.attribute_factory import AttributeFactory
@@ -315,7 +315,7 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             )
 
             # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "3NF", "N/A")
+            normalized_split_relations = normalize(split_relation, "BCNF", "N/A")
 
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
@@ -340,16 +340,76 @@ async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
         # While the relation is not normalized to the desired normal form
         while not isRelationIn4NF(relation):
             # Split relation on a condition matching the normalization form
+            (split_key, mvd) = getAttributeWithMVD(relation)
+
             # Add breaking condition in case while condition is faulty
-                # normalized_relations.append(relation)
+            if not split_key:
+                print(f"Warning: In normalize_to_4NF, something is wrong with the cnf checker. No non-key parents were found. Breaking loop.")
+                normalized_relations.append(relation)
+                break
+            
+            partial_dependencies = [dep for dep in relation.dependencies if dep.parent == split_key.name]
+            stepchildren_attributes = [att for att in relation.attributes if att.name == mvd.name]
+            stepchildren_names = [mvd.name]
+
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+
+            split_relation = Relation(
+                name=f"{split_key.name}s",
+                attributes=stepchildren_attributes,
+                tuples=going_tuples,
+                primary_key=[split_key],
+                dependencies=[partial_dependencies]
+            )
+
             # Normalize the split relation to the desired normal form
+            normalized_split_relations = normalize(split_relation, "4NF", "N/A")
+            
             # Add the split relation to normalized_relations
+            normalized_relations.append(normalized_split_relations)
+            
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            raise NotImplementedError()
+            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
+            relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
+            relation.tuples=staying_tuples
 
         normalized_relations.append(relation)
-    
+        
     return normalized_relations
+
+def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[Attribute]):
+    # Look for Multi-Valued Dependencies where X -> -> Y
+    dependencies = relation.dependencies
+    for attribute_index, attribute in enumerate(relation.attributes):
+        # Get all children dependent on this attribute
+        children_list = getChildAttributes(attribute.name, dependencies)
+
+        # If there are no child attributes, we can't have any MVD's
+        if not children_list or children_list < 1:
+            continue
+
+        # for each child, create a dictionary: key=attribute.value, value=List[all tuple values]
+        for child in children_list:
+            child_index = 0
+            for i, attribute in enumerate(relation.attributes):
+                if child == attribute.name():
+                    child_index = i
+                    break
+            attribute_values_dict = {}
+            for row in relation.tuples:
+                if row[attribute_index] in attribute_values_dict:
+                    attribute_values_dict[row[attribute_index]].append(row[child_index])
+                else:
+                    attribute_values_dict[row[attribute_index]] = [row[child_index]]
+                    
+            # Is the list longer than 1 for any key? Then there's a MVD
+            for _, value in attribute_values_dict.items():
+                unique_items = list(set(value))
+                if len(unique_items) > 1:
+                    mvd = [att for att in relation.attributes if att.name == child]
+                    return (attribute, mvd)
+
+    return True
 
 async def normalize_to_5NF(input_relation: Relation) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
@@ -363,13 +423,40 @@ async def normalize_to_5NF(input_relation: Relation) -> List[Relation]:
         while not isRelationIn5NF(relation):
             # Split relation on a condition matching the normalization form
             # Add breaking condition in case while condition is faulty
-                # normalized_relations.append(relation)
-            # Normalize the split relation to the desired normal form
-            # Add the split relation to normalized_relations
-            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            raise NotImplementedError()
+            if len(relation.dependencies) < 2:
+                print(f"Warning: In normalize_to_5CNF, I'm not sure what other context I can programmatically review to determine where to split. Breaking loop.")
+                normalized_relations.append(relation)
+                break
+            
+            split_key_name = relation.dependencies[0].parent
+            split_key = [att for att in relation.attributes if att.name == split_key_name]
+            split_dependency = [relation.dependencies[0]]
+            stepchildren_names = [dep.children for dep in split_dependency]
+            stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
-    normalized_relations.append(relation)
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+
+            split_relation = Relation(
+                name=f"{split_key_name}s",
+                attributes=stepchildren_attributes,
+                tuples=going_tuples,
+                primary_key=[split_key],
+                dependencies=[split_dependency]
+            )
+
+            # Normalize the split relation to the desired normal form
+            normalized_split_relations = normalize(split_relation, "5CNF", "N/A")
+
+            # Add the split relation to normalized_relations
+            normalized_relations.append(normalized_split_relations)
+            
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
+            relation.dependencies=[dep for dep in relation.dependencies if dep not in split_dependency]
+            relation.tuples=staying_tuples
+
+        normalized_relations.append(relation)
+
     return normalized_relations
 
 def get_nf_integer(nf: str) -> int:
@@ -405,19 +492,3 @@ def split_tuples(original_relation: Relation, split_relation_key: str, split_rel
         splitting_tuples.append(spl_tuple)
 
     return (original_tuples, splitting_tuples)
-            
-            
-            
-    
-    
-    split_key = [att for att in original_relation.attributes if att.name == split_relation_key.name]
-    partial_dependencies = [dep for dep in original_relation.dependencies if dep.parent == split_relation_key.name]
-    stepchildren_names = [dep.children for dep in partial_dependencies]
-    stepchildren_attributes = [att for att in original_relation.attributes if att.name in stepchildren_names]
-    split_relation = Relation(
-        name=f"{split_relation_key.name}s",
-        attributes=stepchildren_attributes,
-        tuples=[],
-        primary_key=[split_key],
-        dependencies=[partial_dependencies]
-    )
