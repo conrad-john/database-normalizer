@@ -188,10 +188,12 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+
             split_relation = Relation(
                 name=f"{non_key_partial_parent}s",
                 attributes=stepchildren_attributes,
-                tuples=[],
+                tuples=going_tuples,
                 primary_key=[split_key],
                 dependencies=[partial_dependencies]
             )
@@ -205,6 +207,7 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
             relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
+            relation.tuples=staying_tuples
     
         normalized_relations.append(relation)
 
@@ -247,10 +250,12 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+
             split_relation = Relation(
                 name=f"{non_key_partial_parent_with_key_ancestor}s",
                 attributes=stepchildren_attributes,
-                tuples=[],
+                tuples=going_tuples,
                 primary_key=[split_key],
                 dependencies=[partial_dependencies]
             )
@@ -264,6 +269,7 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
             relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
+            relation.tuples=staying_tuples
     
         normalized_relations.append(relation)
     
@@ -298,10 +304,12 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+
             split_relation = Relation(
                 name=f"{split_key_name}s",
                 attributes=stepchildren_attributes,
-                tuples=[],
+                tuples=going_tuples,
                 primary_key=[split_key],
                 dependencies=[partial_dependencies]
             )
@@ -315,6 +323,7 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
             relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
+            relation.tuples=staying_tuples
     
         normalized_relations.append(relation)
     
@@ -377,3 +386,38 @@ def get_nf_integer(nf: str) -> int:
         return nf_dict[nf]
     except Exception as e:
         raise ValueError(f"Invalid normal form: {nf}. The valid normal forms are {', '.join(nf_dict.keys())}. Exception: {e}")
+
+def split_tuples(original_relation: Relation, split_relation_key: str, split_relation_attributes: List[str]) -> (List[List[str]], List[List[str]]):
+    # Move top to bottom, left to right appending cells accordingly
+    original_tuples = []
+    splitting_tuples = []
+    for row in original_relation.tuples:
+        ori_tuple = []
+        spl_tuple = []
+        for index, attribute in enumerate(original_relation.attributes):
+            # Only Split - Split Relation Key and Attributes
+            if attribute in split_relation_attributes or attribute == split_relation_key:
+                spl_tuple.append(row[index])
+            # Only Original - Split Relation Key and Non Split Relation Attributes
+            if attribute not in split_relation_attributes:
+                ori_tuple.append(row[index])
+        original_tuples.append(ori_tuple)
+        splitting_tuples.append(spl_tuple)
+
+    return (original_tuples, splitting_tuples)
+            
+            
+            
+    
+    
+    split_key = [att for att in original_relation.attributes if att.name == split_relation_key.name]
+    partial_dependencies = [dep for dep in original_relation.dependencies if dep.parent == split_relation_key.name]
+    stepchildren_names = [dep.children for dep in partial_dependencies]
+    stepchildren_attributes = [att for att in original_relation.attributes if att.name in stepchildren_names]
+    split_relation = Relation(
+        name=f"{split_relation_key.name}s",
+        attributes=stepchildren_attributes,
+        tuples=[],
+        primary_key=[split_key],
+        dependencies=[partial_dependencies]
+    )
