@@ -25,7 +25,8 @@ async def parse_csv(file: UploadFile, keys: List[str]) -> Relation:
         name="R",
         attributes=[],
         tuples=[],
-        primary_key=[]
+        primary_key=[],
+        dependencies=[]
     )
 
     # Read the first line of the file which should contain the attribute names

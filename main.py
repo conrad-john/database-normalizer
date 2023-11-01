@@ -5,6 +5,7 @@ from application.parse_csv import parse_csv
 from application.parse_dependencies import parse_dependencies
 from application.determine_normal_form import determine_normal_form
 from application.parse_txt import parse_text_file
+from application.normalize import normalize
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from typing import List
 
@@ -29,28 +30,28 @@ async def normalize_database(sample_data_csv: UploadFile,
 
 
     # Parse the CSV file into a given relation
-    print("\nStarting to Parse CSV file.\n")
+    print("Starting to Parse CSV file.")
     relation = await parse_csv(sample_data_csv, keys_list)
-    print(f"\nFinished parsing CSV file.\n{relation.to_json()}\n")
+    print(f"Finished parsing CSV file. Relation: {relation.to_json()}")
 
     # Parse out the dependencies into a list of usable objects
-    print("\nStarting to Parse Dependencies.\n")
-    dependencies = await parse_dependencies(relation, dependencies_list)
-    print(f"\nFinished parsing Dependencies.\n{[dependency.to_json() for dependency in dependencies]}\n")
+    print("Starting to Parse Dependencies.")
+    relation.dependencies = await parse_dependencies(relation, dependencies_list)
+    print(f"Finished parsing Dependencies.{[dependency.to_json() for dependency in relation.dependencies]}")
 
     # Retrieve the Current Normal Form of the input relation if requested
-    cnf = "Not Requested"
-    print("\nGetting the current normal form of the relation.")
+    cnf = "N/A"
     if detect_current_normal_form == 'Yes':
-        cnf = await determine_normal_form(relation, dependencies)
-    print(f"\nCurrent Normal Form: {cnf}")
+        print("\nGetting the current normal form of the relation.")
+        cnf = await determine_normal_form(relation)
+        print(f"\nCurrent Normal Form: {cnf}")
 
-    
-
-
+    # Normalize the input Relation to the target specification
+    print(f"Normalizing input relation to {target_normal_form}.")
+    relations = normalize(relation, target_normal_form, cnf)
+    print(f"Finished normalizing relation.")
 
     return {"file_name": sample_data_csv.filename,
             "relation": relation,
-            "dependencies": dependencies,
             "target_NF": target_normal_form,
             "current_NF": cnf}

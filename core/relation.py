@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from core.attribute import Attribute
+from core.dependency import Dependency
 import json
 
 class Relation(BaseModel):
@@ -8,6 +9,7 @@ class Relation(BaseModel):
     attributes: List[Attribute] = Field(default_factory=list)
     tuples: List[List[str]] = Field(default_factory=list)
     primary_key: Optional[List[Attribute]] = Field(default_factory=list)
+    dependencies: List[Dependency] = Field(default_factory=list)
 
     def generate_create_table_query(self):
         # Generate a create table query with the given attribute names

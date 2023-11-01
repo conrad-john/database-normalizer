@@ -4,18 +4,18 @@ from core.relation import Relation
 from core.attribute_factory import AttributeFactory
 from core.attribute import Attribute
 
-async def determine_normal_form(relation: Relation, dependencies: List[Dependency]) -> str:
+async def determine_normal_form(relation: Relation) -> str:
     if not isRelationIn1NF(relation):
         return "UNF"
-    if not isRelationIn2NF(relation, dependencies):
+    if not isRelationIn2NF(relation):
         return "1NF"
-    if not isRelationIn3NF(relation, dependencies):
+    if not isRelationIn3NF(relation):
         return "2NF"
-    if not isRelationInBCNF(relation, dependencies):
+    if not isRelationInBCNF(relation):
         return "3NF"
-    if not isRelationIn4NF(relation, dependencies):
+    if not isRelationIn4NF(relation):
         return "BCNF"
-    if not isRelationIn5NF(relation, dependencies):
+    if not isRelationIn5NF(relation):
         return "4NF"
     return "5NF"
 
@@ -54,8 +54,9 @@ def isRelationIn1NF(relation: Relation) -> bool:
     
     return True
 
-def isRelationIn2NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+def isRelationIn2NF(relation: Relation) -> bool:
     # Look for partial dependencies, X->Y where X is a subset of the key
+    dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
     
     for attribute in relation.attributes:
@@ -75,8 +76,9 @@ def isRelationIn2NF(relation: Relation, dependencies: List[Dependency]) -> bool:
 def getParentAttributes(child_name: str, dependencies: List[Dependency]) -> List[str]:
     return [dep.parent for dep in dependencies if child_name in dep.children]
 
-def isRelationIn3NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+def isRelationIn3NF(relation: Relation) -> bool:
     # Look for Transitive Functional Dependencies where X -> Y -> Z where X is the key but Y is not
+    dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
     
     for attribute in relation.attributes:
@@ -116,8 +118,9 @@ def isNonKeyParentDeterminedByKey(parent: str, dependencies: List[Dependency], k
 
     return False
 
-def isRelationInBCNF(relation: Relation, dependencies: List[Dependency]) -> bool:
+def isRelationInBCNF(relation: Relation) -> bool:
     # Look for Non-Trivial Functional Dependencies where X -> Y but X is not part of the keys
+    dependencies = relation.dependencies
     key_list = [att.name for att in relation.primary_key]
     
     for attribute in relation.attributes:
@@ -137,8 +140,9 @@ def isRelationInBCNF(relation: Relation, dependencies: List[Dependency]) -> bool
         
     return True
 
-def isRelationIn4NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+def isRelationIn4NF(relation: Relation) -> bool:
     # Look for Multi-Valued Dependencies where X -> -> Y
+    dependencies = relation.dependencies
     for attribute_index, attribute in enumerate(relation.attributes):
         # Get all children dependent on this attribute
         children_list = getChildAttributes(attribute.name, dependencies)
@@ -173,7 +177,9 @@ def isRelationIn4NF(relation: Relation, dependencies: List[Dependency]) -> bool:
 def getChildAttributes(parent_name: str, dependencies: List[Dependency]) -> List[str]:
     return [dep.children for dep in dependencies if parent_name in dep.parent]
 
-def isRelationIn5NF(relation: Relation, dependencies: List[Dependency]) -> bool:
+def isRelationIn5NF(relation: Relation) -> bool:
+    dependencies = relation.dependencies
+    
     # Two items are automatically in 5NF
     if len(relation.attributes) < 3:
         return True
