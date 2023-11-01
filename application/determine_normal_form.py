@@ -198,10 +198,6 @@ def isRelationIn5NF(relation: Relation) -> bool:
     attribute_list = [att.name for att in relation.attributes]
     if sorted(key_list) == sorted(attribute_list):
         return True
-    
-    # If there is only one dependency in the table which involves every attribute
-    non_key_attributes = [att for att in attribute_list if att not in key_list]
-    if len(dependencies) == 1 and sorted(dependencies[0].parent) == sorted(key_list) and sorted(dependencies[0].children) == sorted(non_key_attributes):
-        return True
 
+    # It's really hard to say just looking at one relation since Join Dependencies are so subjective
     return False

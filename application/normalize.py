@@ -78,13 +78,7 @@ async def normalize(relation: Relation, target_nf: str, current_nf: str) -> List
 
     # Normalize from 4NF to 5NF
     if target >= 6 and current < 6:
-        normalized_subrelations = []
-        for relation in subrelations:
-            if isRelationIn5NF(relation):
-                normalized_subrelations.append(relation)
-                continue
-            else:
-                normalized_subrelations.append(normalize_to_5NF(relation))
+        normalized_subrelations = normalize_to_5NF(subrelations)
         subrelations = normalized_subrelations
         current = 6
 
@@ -188,7 +182,7 @@ async def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key[0].name, stepchildren_names)
 
             split_relation = Relation(
                 name=f"{non_key_partial_parent}s",
@@ -250,7 +244,7 @@ async def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key[0].name, stepchildren_names)
 
             split_relation = Relation(
                 name=f"{non_key_partial_parent_with_key_ancestor}s",
@@ -304,7 +298,7 @@ async def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
             stepchildren_names = [dep.children for dep in partial_dependencies]
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
+            (staying_tuples, going_tuples) = split_tuples(relation, split_key_name, stepchildren_names)
 
             split_relation = Relation(
                 name=f"{split_key_name}s",
@@ -374,7 +368,7 @@ async def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
             relation.tuples=staying_tuples
 
         normalized_relations.append(relation)
-        
+
     return normalized_relations
 
 def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[Attribute]):
@@ -411,9 +405,11 @@ def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[At
 
     return True
 
-async def normalize_to_5NF(input_relation: Relation) -> List[Relation]:
+async def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = normalize(input_relation, "4NF", "N/A")
+    lower_normalized_relations = []
+    for relation in relations:
+        lower_normalized_relations.append(normalize(relation, "4NF", "N/A"))
         
     # Initialize Empty Normalized Relations
     normalized_relations = []
@@ -422,38 +418,40 @@ async def normalize_to_5NF(input_relation: Relation) -> List[Relation]:
         # While the relation is not normalized to the desired normal form
         while not isRelationIn5NF(relation):
             # Split relation on a condition matching the normalization form
+            # Looking for foreign keys which are not part of the relation's dependencies
+            all_keys = [r.primary_key for r in lower_normalized_relations]
+            key_list = [att.name for att in relation.primary_key]
+            foreign_key_list = [key.name for key in all_keys if key not in key_list]
+            join_dependency = [att.name for att in relation.attributes if att.name in foreign_key_list]
+
             # Add breaking condition in case while condition is faulty
-            if len(relation.dependencies) < 2:
+            if not join_dependency:
                 print(f"Warning: In normalize_to_5CNF, I'm not sure what other context I can programmatically review to determine where to split. Breaking loop.")
                 normalized_relations.append(relation)
                 break
             
-            split_key_name = relation.dependencies[0].parent
+            split_key_name = join_dependency[0]
             split_key = [att for att in relation.attributes if att.name == split_key_name]
-            split_dependency = [relation.dependencies[0]]
-            stepchildren_names = [dep.children for dep in split_dependency]
-            stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
+            split_dependency = []
+            stepchildren_attributes = [relation.primary_key[0]]
+            stepchildren_names = [att.name for att in stepchildren_attributes]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
-
-            split_relation = Relation(
-                name=f"{split_key_name}s",
+            normalized_split_relations = Relation(
+                name=f"{split_key_name}{stepchildren_attributes[0].name}s",
                 attributes=stepchildren_attributes,
-                tuples=going_tuples,
+                tuples=[],
                 primary_key=[split_key],
                 dependencies=[split_dependency]
             )
 
-            # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "5CNF", "N/A")
+            # Automatically in 5NF based on this criteria - normalize the split relation to the desired normal form
+            # normalized_split_relations = normalize(split_relation, "5CNF", "N/A")
 
             # Add the split relation to normalized_relations
             normalized_relations.append(normalized_split_relations)
             
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
-            relation.dependencies=[dep for dep in relation.dependencies if dep not in split_dependency]
-            relation.tuples=staying_tuples
+            relation.attributes=[att for att in relation.attributes if att.name not in split_key_name]
 
         normalized_relations.append(relation)
 
