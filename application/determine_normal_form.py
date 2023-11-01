@@ -1,4 +1,5 @@
 from typing import List
+from application.relation_helper_functions import *
 from core.dependency import Dependency
 from core.relation import Relation
 from core.attribute_factory import AttributeFactory
@@ -59,7 +60,7 @@ def isRelationIn2NF(relation: Relation) -> bool:
         return True
     # Look for partial dependencies, X->Y where X is a subset of the key
     dependencies = relation.dependencies
-    key_list = [att.name for att in relation.primary_key]
+    key_list = get_list_of_key_names(relation)
     
     for attribute in relation.attributes:
         
@@ -83,7 +84,7 @@ def isRelationIn3NF(relation: Relation) -> bool:
         return True
     # Look for Transitive Functional Dependencies where X -> Y -> Z where X is the key but Y is not
     dependencies = relation.dependencies
-    key_list = [att.name for att in relation.primary_key]
+    key_list = get_list_of_key_names(relation)
     
     for attribute in relation.attributes:
         # Get our list of parents (X where X->Y and Y is our attribute)
@@ -127,7 +128,7 @@ def isRelationInBCNF(relation: Relation) -> bool:
         return True
     # Look for Non-Trivial Functional Dependencies where X -> Y but X is not part of the keys
     dependencies = relation.dependencies
-    key_list = [att.name for att in relation.primary_key]
+    key_list = get_list_of_key_names(relation)
     
     for attribute in relation.attributes:
         # Get our list of parents (X where X->Y and Y is our attribute)
@@ -194,8 +195,8 @@ def isRelationIn5NF(relation: Relation) -> bool:
         return True
     
     # If every attribute is also part of the keys
-    key_list = [att.name for att in relation.primary_key]
-    attribute_list = [att.name for att in relation.attributes]
+    key_list = get_list_of_key_names(relation)
+    attribute_list = get_list_of_attribute_names(relation)
     if sorted(key_list) == sorted(attribute_list):
         return True
 

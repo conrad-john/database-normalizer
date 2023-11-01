@@ -49,7 +49,7 @@ async def normalize_database(sample_data_csv: UploadFile,
 
     # Normalize the input Relation to the target specification
     print(f"Normalizing input relation to {target_normal_form}.")
-    relations = normalize(relation, target_normal_form, cnf)
+    relations = await normalize(relation, target_normal_form, cnf)
     print(f"Finished normalizing relation.")
 
     queries = get_table_creation_queries(relations)

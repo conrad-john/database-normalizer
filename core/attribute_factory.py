@@ -6,10 +6,9 @@ import uuid
 class AttributeFactory:
     @classmethod
     def create_attribute(cls, name, value):
-        attribute = Attribute(name=name)
-        attribute.data_type = cls.get_data_type(value)
-        attribute.isAtomic = not ('varchar' in attribute.data_type and ',' in value)
-        return attribute
+        data_type = cls.get_data_type(value)
+        isAtomic = not ('varchar' in data_type and ',' in value)
+        return Attribute(name=name, data_type=data_type, isAtomic=isAtomic)
 
     @staticmethod
     def get_data_type(value):
