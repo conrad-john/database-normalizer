@@ -1,6 +1,5 @@
 import os
 from typing import List
-from core.attribute import Attribute
 from core.attribute_factory import AttributeFactory
 from core.relation import Relation
 from fastapi import UploadFile, HTTPException
@@ -25,7 +24,7 @@ def parse_csv(file: UploadFile, keys: List[str]) -> Relation:
         name="R",
         attributes=[],
         tuples=[],
-        primary_key=[],
+        primary_keys=[],
         dependencies=[]
     )
 
@@ -51,6 +50,6 @@ def parse_csv(file: UploadFile, keys: List[str]) -> Relation:
         key_attribute = [att for att in relation.attributes if att.name == key]
         if not key_attribute:
             raise HTTPException(status_code=400, detail=f"'{key}' was not present in the list of attributes built from the CSV. Please check the spelling of your key(s) against the column names in your CSV.")
-        relation.primary_key.append(key_attribute[0])
+        relation.primary_keys.append(key_attribute[0])
 
     return relation

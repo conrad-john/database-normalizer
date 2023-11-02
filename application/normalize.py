@@ -141,7 +141,7 @@ def normalize_to_1NF(relation: Relation) -> List[Relation]:
         relation.tuples = deduped_rows
 
     # Is there a Primary Key? If not, set one
-    if len(relation.primary_key) < 1:
+    if len(relation.primary_keys) < 1:
         keys = []
         for dependency in relation.dependencies:
             candidate_key = dependency.parent
@@ -167,7 +167,7 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
 
             # Split relation on a condition matching the normalization form
             parents = [dep.parent for dep in relation.dependencies]
-            key_list = [att.name for att in relation.primary_key]
+            key_list = [att.name for att in relation.primary_keys]
             non_key_parents = [parent for parent in parents if parent not in key_list]
 
             # We want non-key parents that have children with other parents that are in the key list
@@ -200,7 +200,7 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
                 name=f"{non_key_partial_parent}s",
                 attributes=stepchildren_attributes,
                 tuples=going_tuples,
-                primary_key=[split_key],
+                primary_keys=[split_key],
                 dependencies=[partial_dependencies]
             )
 
@@ -236,7 +236,7 @@ def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
 
             # Split relation on a condition matching the normalization form
             parents = [dep.parent for dep in relation.dependencies]
-            key_list = [att.name for att in relation.primary_key]
+            key_list = [att.name for att in relation.primary_keys]
             non_key_parents = [parent for parent in parents if parent not in key_list]
 
             # We want non-key parents that have a key parent, grandparent, great-grandparent, etc.
@@ -263,7 +263,7 @@ def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
                 name=f"{non_key_partial_parent_with_key_ancestor}s",
                 attributes=stepchildren_attributes,
                 tuples=going_tuples,
-                primary_key=[split_key],
+                primary_keys=[split_key],
                 dependencies=[partial_dependencies]
             )
 
@@ -297,7 +297,7 @@ def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
 
             # Split relation on a condition matching the normalization form
             parents = [dep.parent for dep in relation.dependencies]
-            key_list = [att.name for att in relation.primary_key]
+            key_list = [att.name for att in relation.primary_keys]
             non_key_parents = [parent for parent in parents if parent not in key_list]
 
             # Add breaking condition in case while condition is faulty
@@ -318,7 +318,7 @@ def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
                 name=f"{split_key_name}s",
                 attributes=stepchildren_attributes,
                 tuples=going_tuples,
-                primary_key=[split_key],
+                primary_keys=[split_key],
                 dependencies=[partial_dependencies]
             )
 
@@ -367,7 +367,7 @@ def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
                 name=f"{split_key.name}s",
                 attributes=stepchildren_attributes,
                 tuples=going_tuples,
-                primary_key=[split_key],
+                primary_keys=[split_key],
                 dependencies=[partial_dependencies]
             )
 
@@ -457,7 +457,7 @@ def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
                 name=f"{split_key_name}{stepchildren_attributes[0].name}s",
                 attributes=stepchildren_attributes,
                 tuples=[],
-                primary_key=[split_key],
+                primary_keys=[split_key],
                 dependencies=[split_dependency]
             )
 

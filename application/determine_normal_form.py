@@ -49,7 +49,7 @@ def isRelationIn1NF(relation: Relation) -> bool:
                 return False
 
     # Check if there is a primary key 
-    if not relation.primary_key or len(relation.primary_key) < 1:
+    if not relation.primary_keys or len(relation.primary_keys) < 1:
         return False
     
     return True
