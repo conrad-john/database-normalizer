@@ -137,6 +137,7 @@ class Normalize_Test(unittest.TestCase):
 
         # Assert
         self.assertEqual(3, len(actual))
+        self.assertFalse(True) # This test is definitely still broken... see output relations
 
 if __name__ == '__main__':
     unittest.main()
