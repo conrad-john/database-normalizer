@@ -3,7 +3,6 @@ from application.relation_helper_functions import *
 from core.dependency import Dependency
 from core.relation import Relation
 from core.attribute_factory import AttributeFactory
-from core.attribute import Attribute
 
 def determine_normal_form(relation: Relation) -> str:
     if not isRelationIn1NF(relation):

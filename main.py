@@ -1,14 +1,10 @@
-import logging
-from core.relation import Relation
-from core.dependency import Dependency
 from application.parse_csv import parse_csv
 from application.parse_dependencies import parse_dependencies
 from application.determine_normal_form import determine_normal_form
 from application.parse_txt import parse_text_file
 from application.normalize import normalize
 from application.sql_builder import get_table_creation_queries
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
-from typing import List
+from fastapi import FastAPI, UploadFile, HTTPException, Query
 
 app = FastAPI(
     title="Database Normalizer API",

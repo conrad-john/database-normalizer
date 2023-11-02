@@ -1,6 +1,5 @@
 from core.attribute import Attribute
 from core.datetime_formatter import is_serialized_date
-import dateparser
 import uuid
 
 class AttributeFactory:
@@ -25,7 +24,7 @@ class AttributeFactory:
                 return "float"
             except:
                 if is_serialized_date(value):
-                    return "datetime"
+                    return "date"
                 try:
                     uuid.UUID(value)
                     return "UUID"

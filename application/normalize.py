@@ -1,7 +1,6 @@
 from typing import List, Optional
 from core.dependency import Dependency
 from core.relation import Relation
-from core.attribute_factory import AttributeFactory
 from core.attribute import Attribute
 from application.determine_normal_form import *
 
