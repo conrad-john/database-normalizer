@@ -194,10 +194,22 @@ def isRelationIn4NF(relation: Relation) -> bool:
 
 def getChildAttributes(parent_name: str, dependencies: List[Dependency]) -> List[str]:
     children = []
-    dependencies_with_given_parent = [dep for dep in dependencies if parent_name in dep.parent]
+    dependencies_with_given_parent = [dep for dep in dependencies if parent_name == dep.parent]
     for dep in dependencies_with_given_parent:
         children.extend(dep.children)
     return children
+
+def getAllDescendants(parent_name: str, dependencies: List[Dependency]) -> List[str]:
+    # Get the next level of children
+    descendants = getChildAttributes(parent_name, dependencies)    
+    # Recursively go down the chain of dependencies to their children
+    for descendant in descendants:
+        descendants.extend(getAllDescendants(descendant, dependencies))
+    # Dedup
+    return list(set(descendants))
+
+    
+        
 
 def isRelationIn5NF(relation: Relation) -> bool:
     dependencies = relation.dependencies

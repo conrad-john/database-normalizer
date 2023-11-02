@@ -164,45 +164,55 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
         print(f"In normalize.py, checking if relation named '{relation.name}' is in 2NF")
         # While the relation is not normalized to the desired normal form
         while not isRelationIn2NF(relation):
-
-            # Split relation on a condition matching the normalization form
-            parents = [dep.parent for dep in relation.dependencies]
+            # Split relation on a condition matching the normalization form: Find X -> Y dependencies where X is a subset of the superkey
             key_list = [att.name for att in relation.primary_keys]
-            non_key_parents = [parent for parent in parents if parent not in key_list]
+            # We want a child whose parents make up a subset of the key list
+            partial_dependent_parent = None
 
-            # We want non-key parents that have children with other parents that are in the key list
-            non_key_partial_parent = None
-            for parent in non_key_parents:
-                children = [dep.children for dep in relation.dependencies if dep.parent == parent]
+            # For each key, get its children
+            for key in key_list:
+                # make sure each of its childrens parents include the full key list
+                children = getChildAttributes(key, relation.dependencies)
                 for child in children:
-                    other_parents_of_child = [dep.parent for dep in getParentAttributes(child) if dep.parent != parent]
-                    other_parents_who_are_keys = [key for key in key_list if key in other_parents_of_child]
-                    if other_parents_who_are_keys > 0:
-                        non_key_partial_parent = parent
+                    parents = getParentAttributes(child, relation.dependencies)
+                    keys_not_in_parents = [k for k in key_list if k not in parents]
+                    if keys_not_in_parents:
+                        print(f"In normalize_to_2NF, partial dependency found between {key}->{child}")
+                        partial_dependent_parent = key
                         break
-                if non_key_partial_parent:
+                if partial_dependent_parent:
                     break
 
             # Add breaking condition in case while condition is faulty
-            if not non_key_partial_parent:
+            if not partial_dependent_parent:
                 print(f"Warning: In normalize_to_2NF, something is wrong with the cnf checker. No non-key parents were found. Breaking loop.")
                 normalized_relations.append(relation)
                 break
 
-            split_key = [att for att in relation.attributes if att.name == non_key_partial_parent]
-            partial_dependencies = [dep for dep in relation.dependencies if dep.parent == non_key_partial_parent]
-            stepchildren_names = [dep.children for dep in partial_dependencies]
+            # Split relation on a condition matching the normalization form: take partial_dependent_parent and it's children to a new table
+            split_keys = [att for att in relation.attributes if att.name == partial_dependent_parent]
+            stepchildren_names = getAllDescendants(partial_dependent_parent, relation.dependencies)
             stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
+            split_attributes = split_keys + stepchildren_attributes
+            split_attribute_names = [att.name for att in split_attributes]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key[0].name, stepchildren_names)
+            # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
+            partial_dependencies = [dep for dep in relation.dependencies if dep.parent in split_attribute_names]
+
+            (staying_tuples, going_tuples) = split_tuples(relation, split_keys[0].name, stepchildren_names)
 
             split_relation = Relation(
-                name=f"{non_key_partial_parent}s",
-                attributes=stepchildren_attributes,
+                name=f"{partial_dependent_parent}s",
+                attributes=split_attributes,
                 tuples=going_tuples,
-                primary_keys=[split_key],
-                dependencies=[partial_dependencies]
+                primary_keys=split_keys,
+                dependencies=partial_dependencies
             )
+
+            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
+            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
+            relation.dependencies=[dep for dep in relation.dependencies if dep.parent not in split_attribute_names]
+            relation.tuples=staying_tuples
 
             # Normalize the split relation to the desired normal form
             normalized_split_relations = normalize(split_relation, "2NF", "N/A")
@@ -210,10 +220,7 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             # Add the split relation to normalized_relations
             normalized_relations.extend(normalized_split_relations)
             
-            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
-            relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
-            relation.tuples=staying_tuples
+
     
         normalized_relations.append(relation)
 
@@ -503,20 +510,22 @@ def get_nf_integer(nf: str) -> int:
         raise ValueError(f"Invalid normal form: {nf}. The valid normal forms are {', '.join(nf_dict.keys())}. Exception: {e}")
 
 def split_tuples(original_relation: Relation, split_relation_key: str, split_relation_attributes: List[str]) -> (List[List[str]], List[List[str]]):
-    # Move top to bottom, left to right appending cells accordingly
-    original_tuples = []
-    splitting_tuples = []
+    # Get staying_indexes and going_indexes
+    staying_indexes = []
+    going_indexes = []
+    for index, attribute in enumerate(original_relation.attributes):
+        if attribute.name in split_relation_attributes or attribute.name == split_relation_key:
+            going_indexes.append(index)
+        if attribute.name not in split_relation_attributes:
+            staying_indexes.append(index)
+    
+    # make two subsets of the original tuples mapped to the indexes we just pulled
+    staying_tuples = []
+    going_tuples = []
     for row in original_relation.tuples:
-        ori_tuple = []
-        spl_tuple = []
-        for index, attribute in enumerate(original_relation.attributes):
-            # Only Split - Split Relation Key and Attributes
-            if attribute in split_relation_attributes or attribute == split_relation_key:
-                spl_tuple.append(row[index])
-            # Only Original - Split Relation Key and Non Split Relation Attributes
-            if attribute not in split_relation_attributes:
-                ori_tuple.append(row[index])
-        original_tuples.append(ori_tuple)
-        splitting_tuples.append(spl_tuple)
-
-    return (original_tuples, splitting_tuples)
+        new_staying_tuple = [row[i] for i in staying_indexes]
+        new_going_tuple = [row[i] for i in going_indexes]
+        staying_tuples.append(new_staying_tuple)
+        going_tuples.append(new_going_tuple)
+    
+    return (staying_tuples, going_tuples)
