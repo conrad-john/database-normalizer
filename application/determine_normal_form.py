@@ -1,5 +1,6 @@
 from typing import List
 from application.relation_helper_functions import *
+from core.attribute import Attribute
 from core.dependency import Dependency
 from core.relation import Relation
 from core.attribute_factory import AttributeFactory
@@ -55,25 +56,31 @@ def isRelationIn1NF(relation: Relation) -> bool:
     return True
 
 def isRelationIn2NF(relation: Relation) -> bool:
+    # Find X -> Y dependencies where X is a subset of the superkey
     if len(relation.attributes) < 3:
         return True
     
-    # Look for partial dependencies, X->Y where X is a subset of the key
-    dependencies = relation.dependencies
-    key_list = get_list_of_key_names(relation)
-    
-    for attribute in relation.attributes:
-        
-        # This for loop checks if there are any attributes which appear as children in our list of depenedencies
-        parent_list = getParentAttributes(attribute.name, dependencies)
-        if not parent_list or len(parent_list) < 1:
-            continue
-        
-        # If it finds matching instances in dependencies, it ensures the determining attribute at least include the full key
-        keys_not_in_parents = [key for key in key_list if key not in parent_list]
-        if len(keys_not_in_parents) > 0:
-            return False
+    # Split relation on a condition matching the normalization form
+    key_list = [att.name for att in relation.primary_keys]
+    # non_key_parents_names = [parent for parent in parents_names if parent not in key_list]
 
+    # We want a child whose parents make up a subset of the key list
+    #     
+    # partial_dependency = None
+    # partial_dependent_parent = None
+    # partial_dependent_children = []
+
+    # For each key, get its children
+    for key in key_list:
+        # make sure each of its childrens parents include the full key list
+        children = getChildAttributes(key, relation.dependencies)
+        for child in children:
+            parents = getParentAttributes(child, relation.dependencies)
+            keys_not_in_parents = [k for k in key_list if k not in parents]
+            if keys_not_in_parents:
+                print(f"In isRelationIn2NF, partial dependency found between {key}->{child}")
+                return False
+            
     return True
 
 def getParentAttributes(child_name: str, dependencies: List[Dependency]) -> List[str]:
@@ -159,14 +166,14 @@ def isRelationIn4NF(relation: Relation) -> bool:
         children_list = getChildAttributes(attribute.name, dependencies)
 
         # If there are no child attributes, we can't have any MVD's
-        if not children_list or children_list < 1:
+        if not children_list or len(children_list) < 1:
             continue
 
         # for each child, create a dictionary: key=attribute.value, value=List[all tuple values]
         for child in children_list:
             child_index = 0
             for i, attribute in enumerate(relation.attributes):
-                if child == attribute.name():
+                if child == attribute.name:
                     child_index = i
                     break
             attribute_values_dict = {}
@@ -186,7 +193,11 @@ def isRelationIn4NF(relation: Relation) -> bool:
     return True
 
 def getChildAttributes(parent_name: str, dependencies: List[Dependency]) -> List[str]:
-    return [dep.children for dep in dependencies if parent_name in dep.parent]
+    children = []
+    dependencies_with_given_parent = [dep for dep in dependencies if parent_name in dep.parent]
+    for dep in dependencies_with_given_parent:
+        children.extend(dep.children)
+    return children
 
 def isRelationIn5NF(relation: Relation) -> bool:
     dependencies = relation.dependencies
