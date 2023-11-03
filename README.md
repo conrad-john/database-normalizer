@@ -19,7 +19,7 @@ Before you get started, ensure you have the following software installed on your
 
 3. Run the Docker container from the image:
 
-   '''bash
+   ```bash
    docker run -d -p 80:80 database-normalizer
 
 4. You can now access the application at http://localhost:80/docs in a web browser or via an HTTP client.
