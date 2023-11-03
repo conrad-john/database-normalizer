@@ -223,6 +223,13 @@ def isRelationIn5NF(relation: Relation) -> bool:
     attribute_list = get_list_of_attribute_names(relation)
     if sorted(key_list) == sorted(attribute_list):
         return True
-
+    
+    # If the relation has only one dependency and all the attributes are members of that dependency
+    if len(relation.dependencies) < 2:
+        attribute_list_no_children = [attribute_name for attribute_name in attribute_list if attribute_name not in relation.dependencies[0].children]
+        attribute_list_no_parent = [attribute_name for attribute_name in attribute_list_no_children if attribute_name != relation.dependencies[0].parent]
+        if len(attribute_list_no_parent) < 1:
+            return True
+    
     # It's really hard to say just looking at one relation since Join Dependencies are so subjective
     return False

@@ -239,5 +239,69 @@ class Normalize_Test(unittest.TestCase):
         # Assert
         for relation in actual:
             self.assertTrue(isRelationIn4NF(relation))
+    def test_given_4NF_Normalize_to_5NF(self):
+        # Arrange
+        # Professor*, ProfessorEmail
+        # Course*, Professor*, CourseStart, CourseEnd
+        
+        a_attributes = [
+            Attribute(name="Professor", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="ProfessorEmail", data_type="varchar(50)", isAtomic=True)
+        ]
+        a_tuples = [
+            ["Dr.Smith","smith@mst.edu"],
+            ["Dr.Jones","jones@mst.edu"],
+            ["Dr.Watson","watson@mst.edu"],
+        ]
+        a_prim_key = [
+            Attribute(name="Professor", data_type="varchar(50)", isAtomic=True)
+        ]
+        a_dependencies = [
+            Dependency(parent="Professor", children=["ProfessorEmail"])
+        ]
+        a_test_relation= Relation(
+            name="a_test_relation",
+            attributes=a_attributes,
+            tuples=a_tuples,
+            primary_keys=a_prim_key,
+            dependencies=a_dependencies
+        )
+
+        b_attributes = [
+            Attribute(name="Course", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="Professor", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="CourseStart", data_type="date", isAtomic=True),
+            Attribute(name="CourseEnd", data_type="date", isAtomic=True)
+        ]
+        b_tuples = [
+            ["Math101","Dr.Smith","3/1/2023","5/30/2023"],
+            ["Math101","Dr.Jones","3/1/2023","5/30/2023"],
+            ["Math101","Dr.Watson","3/1/2023","5/30/2023"]
+        ]
+        b_prim_keys = [
+            Attribute(name="Course", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="Professor", data_type="varchar(50)", isAtomic=True)
+        ]
+        b_dependencies = [
+            Dependency(parent="Course", children=["CourseStart","CourseEnd"])
+        ]
+        b_test_relation= Relation(
+            name="b_test_relation",
+            attributes=b_attributes,
+            tuples=b_tuples,
+            primary_keys=b_prim_keys,
+            dependencies=b_dependencies
+        )
+
+        test_relations = [
+            a_test_relation,
+            b_test_relation
+        ]
+
+        # Act
+        actual = normalize_to_5NF(test_relations)
+        # Assert
+        for relation in actual:
+            self.assertTrue(isRelationIn5NF(relation))
 if __name__ == '__main__':
     unittest.main()

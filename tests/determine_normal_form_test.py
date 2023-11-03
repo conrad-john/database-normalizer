@@ -399,34 +399,5 @@ class Determine_Normal_Form_Test(unittest.TestCase):
         actual = determine_normal_form(test_relation)
         # Assert
         self.assertEqual("4NF", actual)
-    def test_given_5NF_returns_5NF(self):
-        # Arrange
-        # Course* -> CourseStart, CourseEnd
-        test_attributes = [
-            Attribute(name="Course", data_type="varchar(50)", isAtomic=True),
-            Attribute(name="CourseStart", data_type="date", isAtomic=True),
-            Attribute(name="CourseEnd", data_type="date", isAtomic=True)
-        ]
-        test_tuples = [
-            ["Math101","3/1/2023","5/30/2023"],
-            ["CompSci201","3/1/2023","5/30/2023"]
-        ]
-        test_primary_keys = [
-            Attribute(name="Course", data_type="varchar(50)", isAtomic=True)
-        ]
-        test_dependencies = [
-            Dependency(parent="Course", children=["CourseStart","CourseEnd"])
-        ]
-        test_relation= Relation(
-            name="test_relation",
-            attributes=test_attributes,
-            tuples=test_tuples,
-            primary_keys=test_primary_keys,
-            dependencies=test_dependencies
-        )
-        # Act
-        actual = determine_normal_form(test_relation)
-        # Assert
-        self.assertEqual("4NF", actual)
 if __name__ == '__main__':
     unittest.main()

@@ -366,25 +366,23 @@ def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[At
     return (None, None)
 
 def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
-    # Ensure relation is normalized to lower normal forms first
-    lower_normalized_relations = []
-    for relation in relations:
-        lower_normalized_relations.extend(normalize(relation, "4NF", "N/A"))
-        
     # Initialize Empty Normalized Relations
     normalized_relations = []
 
-    for relation in lower_normalized_relations:
+    for relation in relations:
         print(f"In normalize.py, checking if relation named '{relation.name}' is in 5NF")
 
-        # While the relation is not normalized to the desired normal form
-        while not isRelationIn5NF(relation):
+        # If the relation is not normalized to the desired normal form
+        if not isRelationIn5NF(relation):
+            foreign_keys = []
             # Split relation on a condition matching the normalization form
             # Looking for foreign keys which are not part of the relation's dependencies
-            all_keys = [r.primary_key for r in lower_normalized_relations]
-            key_list = [att.name for att in relation.primary_key]
-            foreign_key_list = [key.name for key in all_keys if key not in key_list]
-            join_dependency = [att.name for att in relation.attributes if att.name in foreign_key_list]
+            foreign_key_collections = [r.primary_keys for r in relations if r.name != relation.name]
+            for collection in foreign_key_collections:
+                foreign_keys.extend(collection)
+            key_list = [att.name for att in relation.primary_keys]
+            foreign_key_names = [key.name for key in foreign_keys]
+            join_dependency = [att for att in relation.attributes if att.name in foreign_key_names]
 
             # Add breaking condition in case while condition is faulty
             if not join_dependency:
@@ -392,28 +390,17 @@ def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
                 normalized_relations.append(relation)
                 break
             
-            split_key_name = join_dependency[0].parent
-            split_key = [att for att in relation.attributes if att.name == split_key_name]
-            split_dependency = []
-            stepchildren_attributes = [relation.primary_key[0]]
-            stepchildren_names = [att.name for att in stepchildren_attributes]
+            # Split relation on a condition matching the normalization form: take non-key-parent and it's children to a new table
+            # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
+            A_Attributes = [relation.primary_keys[0], join_dependency[0]]
+            B_Attributes = [att for att in relation.attributes if att.name != join_dependency[0].name]
+            (A_Relation, B_Relation) = split_relation(relation, A_Attributes, B_Attributes)
 
-            normalized_split_relations = Relation(
-                name=f"{split_key_name}{stepchildren_attributes[0].name}s",
-                attributes=stepchildren_attributes,
-                tuples=[],
-                primary_keys=[split_key],
-                dependencies=[split_dependency]
-            )
-
-            # Automatically in 5NF based on this criteria - normalize the split relation to the desired normal form
             # Add the split relation to normalized_relations
-            normalized_relations.extend(normalized_split_relations)
-            
-            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            relation.attributes=[att for att in relation.attributes if att.name not in split_key_name]
-
-        normalized_relations.append(relation)
+            normalized_relations.extend(normalize(A_Relation, "2NF", "N/A"))
+            normalized_relations.extend(normalize(B_Relation, "2NF", "N/A"))
+        else:
+            normalized_relations.append(relation)
 
     return normalized_relations
 
