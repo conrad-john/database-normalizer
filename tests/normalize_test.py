@@ -137,7 +137,8 @@ class Normalize_Test(unittest.TestCase):
 
         # Assert
         self.assertEqual(3, len(actual))
-        self.assertFalse(True) # This test is definitely still broken... see output relations
+        for relation in actual:
+            self.assertTrue(isRelationIn2NF(relation))
 
 if __name__ == '__main__':
     unittest.main()
