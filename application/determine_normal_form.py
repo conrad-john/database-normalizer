@@ -62,13 +62,6 @@ def isRelationIn2NF(relation: Relation) -> bool:
     
     # Split relation on a condition matching the normalization form
     key_list = [att.name for att in relation.primary_keys]
-    # non_key_parents_names = [parent for parent in parents_names if parent not in key_list]
-
-    # We want a child whose parents make up a subset of the key list
-    #     
-    # partial_dependency = None
-    # partial_dependent_parent = None
-    # partial_dependent_children = []
 
     # For each key, get its children
     for key in key_list:
@@ -207,9 +200,6 @@ def getAllDescendants(parent_name: str, dependencies: List[Dependency]) -> List[
         descendants.extend(getAllDescendants(descendant, dependencies))
     # Dedup
     return list(set(descendants))
-
-    
-        
 
 def isRelationIn5NF(relation: Relation) -> bool:
     dependencies = relation.dependencies

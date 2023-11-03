@@ -25,7 +25,6 @@ async def normalize_database(sample_data_csv: UploadFile,
     except Exception as e:
         raise HTTPException(status_code=400, detail="Error parsing text files: " + str(e))
 
-
     # Parse the CSV file into a given relation
     print("Starting to Parse CSV file.")
     relation = parse_csv(sample_data_csv, keys_list)

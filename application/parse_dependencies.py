@@ -18,9 +18,11 @@ def parse_dependencies(R: Relation, dependency_inputs: List[str]) -> List[Depend
         if len(split_input) > 2:
             raise HTTPException(status_code=400, detail=f"This application does not support the input of multiple dependency chains (e.g. X -> Y -> Z). Please separate dependencies.")
 
+        # Set the split inputs into the parent: str and children: List[str]
         parent = split_input[0].strip()
         children = split_input[1].replace(" ", "").split(',')
 
+        # Ensure the parent and children are valid attribute names
         if parent not in [attribute.name for attribute in R.attributes]:
             raise HTTPException(status_code=400, detail=f"{parent} attribute name was not present in the list of attributes built from the CSV. Please check the spelling of your dependencies against your CSV.")
 

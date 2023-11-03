@@ -9,8 +9,10 @@ def normalize(relation: Relation, target_nf: str, current_nf: str) -> List[Relat
     target = get_nf_integer(target_nf)
     current = get_nf_integer(determine_normal_form(relation)) if current_nf == "N/A" else get_nf_integer(current_nf)
 
+    # Initialize the list of relations which will grow through each stage of normalization
     subrelations = [relation]
 
+    # Determine if we actually need to normalize
     if target <= current:
         print(f"The Relationship is already normalized to {get_nf_string(current)} which is equal to or higher than the requested {target_nf}.")
         return subrelations
