@@ -209,7 +209,7 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
         else:
             normalized_relations.append(relation)
 
-    return normalized_relations# [relation for relation in normalized_relations if isRelationIn2NF(relation)]
+    return normalized_relations
 
 def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
     # Look for partial dependencies in each relation and split the relation accordingly
@@ -223,8 +223,8 @@ def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
     for relation in lower_normalized_relations:
         print(f"In normalize.py, checking if relation named '{relation.name}' is in 3NF")
 
-        # While the relation is not normalized to the desired normal form
-        while not isRelationIn3NF(relation):
+        # If the relation is not normalized to the desired normal form
+        if not isRelationIn3NF(relation):
 
             # Split relation on a condition matching the normalization form
             parents = [dep.parent for dep in relation.dependencies]
@@ -243,35 +243,19 @@ def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
                 print(f"Warning: In normalize_to_3NF, something is wrong with the cnf checker. No non-key partial parents were found with key ancestor. Breaking loop.")
                 normalized_relations.append(relation)
                 break
-
-            split_key = [att for att in relation.attributes if att.name == non_key_partial_parent_with_key_ancestor]
-            partial_dependencies = [dep for dep in relation.dependencies if dep.parent == non_key_partial_parent_with_key_ancestor]
-            stepchildren_names = [dep.children for dep in partial_dependencies]
-            stepchildren_attributes = [att for att in relation.attributes if att.name in stepchildren_names]
-
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key[0].name, stepchildren_names)
-
-            split_relation = Relation(
-                name=f"{non_key_partial_parent_with_key_ancestor}s",
-                attributes=stepchildren_attributes,
-                tuples=going_tuples,
-                primary_keys=[split_key],
-                dependencies=[partial_dependencies]
-            )
-
-            # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "3NF", "N/A")
+            
+            # Split relation on a condition matching the normalization form: take partial_dependent_parent and it's children to a new table
+            # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
+            descendants = getAllDescendants(non_key_partial_parent_with_key_ancestor, relation.dependencies)
+            (A_Attributes, B_Attributes) = split_attributes_by_parent_and_descendants(relation.attributes, non_key_partial_parent_with_key_ancestor, descendants)
+            (A_Relation, B_Relation) = split_relation(relation, A_Attributes, B_Attributes)
 
             # Add the split relation to normalized_relations
-            normalized_relations.extend(normalized_split_relations)
-            
-            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
-            relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
-            relation.tuples=staying_tuples
-    
-        normalized_relations.append(relation)
-    
+            normalized_relations.extend(normalize(A_Relation, "2NF", "N/A"))
+            normalized_relations.extend(normalize(B_Relation, "2NF", "N/A"))
+        else:
+            normalized_relations.append(relation)
+
     return normalized_relations
 
 def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:

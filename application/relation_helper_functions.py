@@ -142,7 +142,15 @@ def split_relation(R: Relation, A_Attributes: List[Attribute], B_Attributes: Lis
     b_dependencies = get_relevant_dependencies(R, B_Attributes)
     # Split the keys
     a_keys = [key for key in R.primary_keys if key.name in [att.name for att in A_Attributes]]
+    if not a_keys:
+        a_keys = [att for att in A_Attributes if att.name in [dep.parent for dep in a_dependencies]]
+        if not a_keys:
+            a_keys = [A_Attributes[0]]
     b_keys = [key for key in R.primary_keys if key.name in [att.name for att in B_Attributes]]
+    if not b_keys:
+        b_keys = [att for att in B_Attributes if att.name in [dep.parent for dep in b_dependencies]]
+        if not b_keys:
+            b_keys = [B_Attributes[0]]
 
     A = Relation(
                 name=f"{a_name}s",
