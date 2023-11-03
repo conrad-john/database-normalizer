@@ -1,0 +1,9 @@
+{
+    "InputTableNormalForm": "1NF",
+    "SQL Queries": [
+      "CREATE TABLE StudentIDFirstNameLastNames (StudentID int, FirstName varchar(50), LastName varchar(50), PRIMARY KEY (StudentID));",
+      "CREATE TABLE ProfessorProfessorEmails (Professor varchar(50), ProfessorEmail varchar(50), PRIMARY KEY (Professor));",
+      "CREATE TABLE CourseProfessorCourseStartCourseEnds (Course varchar(50), Professor varchar(50), CourseStart date, CourseEnd date, PRIMARY KEY (Course, Professor));",
+      "CREATE TABLE StudentIDCourses (StudentID int, Course varchar(50), PRIMARY KEY (StudentID, Course));"
+    ]
+}
