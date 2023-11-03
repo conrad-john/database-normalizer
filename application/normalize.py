@@ -111,7 +111,7 @@ def normalize_to_1NF(relation: Relation) -> List[Relation]:
             renamed_attribute = f"Duplicate_{attribute.name}"
             new_dependencies = []
             for dependency in relation.dependencies:
-                if attribute.name in dependency.parent:
+                if attribute.name == dependency.parent:
                     new_dependencies.append(Dependency(parent=renamed_attribute, children=dependency.children))
                 elif attribute.name in dependency.children:
                     stepchildren = [children for children in dependency.children if children != attribute.name]
@@ -162,8 +162,8 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
 
     for relation in lower_normalized_relations:
         print(f"In normalize.py, checking if relation named '{relation.name}' is in 2NF")
-        # While the relation is not normalized to the desired normal form
-        while not isRelationIn2NF(relation):
+        # If the relation is not normalized to the desired normal form
+        if not isRelationIn2NF(relation):
             # Split relation on a condition matching the normalization form: Find X -> Y dependencies where X is a subset of the superkey
             key_list = [att.name for att in relation.primary_keys]
             # We want a child whose parents make up a subset of the key list
@@ -199,7 +199,10 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
             partial_dependencies = [dep for dep in relation.dependencies if dep.parent in split_attribute_names]
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_keys[0].name, stepchildren_names)
+            (staying_tuples, going_tuples) = split_tuples(relation, staying_attribute_names, going_attribute_names)
+
+            other_keys = [key for key in relation.primary_keys if key.name in split_attribute_names and key.name != partial_dependent_parent]
+            split_keys.extend(other_keys)
 
             split_relation = Relation(
                 name=f"{partial_dependent_parent}s",
@@ -212,16 +215,13 @@ def normalize_to_2NF(input_relation: Relation) -> List[Relation]:
             # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
             relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
             relation.dependencies=[dep for dep in relation.dependencies if dep.parent not in split_attribute_names]
+            relation.primary_keys=[att for att in relation.primary_keys if att.name not in [att.name for att in stepchildren_attributes]]
             relation.tuples=staying_tuples
 
-            # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "2NF", "N/A")
-
             # Add the split relation to normalized_relations
-            normalized_relations.extend(normalized_split_relations)
+            normalized_relations.extend(normalize(split_relation, "2NF", "N/A"))
+            normalized_relations.extend(normalize(relation, "2NF", "N/A"))
             
-
-    
         normalized_relations.append(relation)
 
     return normalized_relations
@@ -529,3 +529,24 @@ def split_tuples(original_relation: Relation, split_relation_key: str, split_rel
         going_tuples.append(new_going_tuple)
     
     return (staying_tuples, going_tuples)
+
+def split_tuples_v2(original_relation: Relation, a_attribute_names: List[str], b_attribute_names: List[str]) -> (List[List[str]], List[List[str]]):
+    # Get staying_indexes and going_indexes
+    a_indexes = []
+    b_indexes = []
+    for index, attribute in enumerate(original_relation.attributes):
+        if attribute.name in a_attribute_names:
+            b_indexes.append(index)
+        if attribute.name in b_attribute_names:
+            a_indexes.append(index)
+    
+    # make two subsets of the original tuples mapped to the indexes we just pulled
+    a_tuples = []
+    b_tuples = []
+    for row in original_relation.tuples:
+        new_a_tuple = [row[i] for i in a_indexes]
+        new_b_tuple = [row[i] for i in b_indexes]
+        a_tuples.append(new_a_tuple)
+        b_tuples.append(new_b_tuple)
+    
+    return (a_tuples, b_tuples)
