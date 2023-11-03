@@ -244,7 +244,7 @@ def normalize_to_3NF(input_relation: Relation) -> List[Relation]:
                 normalized_relations.append(relation)
                 break
             
-            # Split relation on a condition matching the normalization form: take partial_dependent_parent and it's children to a new table
+            # Split relation on a condition matching the normalization form: take transitive-determinant-parent and it's children to a new table
             # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
             descendants = getAllDescendants(non_key_partial_parent_with_key_ancestor, relation.dependencies)
             (A_Attributes, B_Attributes) = split_attributes_by_parent_and_descendants(relation.attributes, non_key_partial_parent_with_key_ancestor, descendants)
@@ -282,7 +282,7 @@ def normalize_to_BCNF(input_relation: Relation) -> List[Relation]:
                 normalized_relations.append(relation)
                 break
 
-            # Split relation on a condition matching the normalization form: take partial_dependent_parent and it's children to a new table
+            # Split relation on a condition matching the normalization form: take non-key-parent and it's children to a new table
             # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
             parent_to_yeet = non_key_parents[0]
             descendants = getAllDescendants(parent_to_yeet, relation.dependencies)
@@ -306,8 +306,8 @@ def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
 
     for relation in lower_normalized_relations:
         print(f"In normalize.py, checking if relation named '{relation.name}' is in 4NF")
-        # While the relation is not normalized to the desired normal form
-        while not isRelationIn4NF(relation):
+        # If the relation is not normalized to the desired normal form
+        if not isRelationIn4NF(relation):
             # Split relation on a condition matching the normalization form
             (split_key, mvd) = getAttributeWithMVD(relation)
 
@@ -317,51 +317,36 @@ def normalize_to_4NF(input_relation: Relation) -> List[Relation]:
                 normalized_relations.append(relation)
                 break
             
-            partial_dependencies = [dep for dep in relation.dependencies if dep.parent == split_key.name]
-            stepchildren_attributes = [att for att in relation.attributes if att.name == mvd.name]
-            stepchildren_names = [mvd.name]
+            # Split relation on a condition matching the normalization form: take multi-value-determinant parent and it's children to a new table
+            # We need the full dependency chain... so if the partial dependency is X -> Y, we need all of Y's dependents to go to the split table
+            A_Attributes = [split_key, mvd[0]]
+            B_Attributes = [att for att in relation.attributes if att.name != mvd[0].name]
+            (A_Relation, B_Relation) = split_relation(relation, A_Attributes, B_Attributes)
 
-            (staying_tuples, going_tuples) = split_tuples(relation, split_key.name, stepchildren_names)
-
-            split_relation = Relation(
-                name=f"{split_key.name}s",
-                attributes=stepchildren_attributes,
-                tuples=going_tuples,
-                primary_keys=[split_key],
-                dependencies=[partial_dependencies]
-            )
-
-            # Normalize the split relation to the desired normal form
-            normalized_split_relations = normalize(split_relation, "4NF", "N/A")
-            
             # Add the split relation to normalized_relations
-            normalized_relations.extend(normalized_split_relations)
-            
-            # Remove necessary attributes and tuple data from the original relation, keeping the key of the new relation as a foreign key
-            relation.attributes=[att for att in relation.attributes if att.name not in stepchildren_names]
-            relation.dependencies=[dep for dep in relation.dependencies if dep not in partial_dependencies]
-            relation.tuples=staying_tuples
-
-        normalized_relations.append(relation)
+            normalized_relations.extend(normalize(A_Relation, "2NF", "N/A"))
+            normalized_relations.extend(normalize(B_Relation, "2NF", "N/A"))
+        else:
+            normalized_relations.append(relation)
 
     return normalized_relations
 
 def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[Attribute]):
     # Look for Multi-Valued Dependencies where X -> -> Y
     dependencies = relation.dependencies
-    for attribute_index, attribute in enumerate(relation.attributes):
+    for attribute_index, outer_attribute in enumerate(relation.attributes):
         # Get all children dependent on this attribute
-        children_list = getChildAttributes(attribute.name, dependencies)
+        children_list = getChildAttributes(outer_attribute.name, dependencies)
 
         # If there are no child attributes, we can't have any MVD's
-        if not children_list or children_list < 1:
+        if not children_list or len(children_list) < 1:
             continue
 
         # for each child, create a dictionary: key=attribute.value, value=List[all tuple values]
         for child in children_list:
             child_index = 0
             for i, attribute in enumerate(relation.attributes):
-                if child == attribute.name():
+                if child == attribute.name:
                     child_index = i
                     break
             attribute_values_dict = {}
@@ -376,9 +361,9 @@ def getAttributeWithMVD(relation: Relation) -> (Optional[Attribute], Optional[At
                 unique_items = list(set(value))
                 if len(unique_items) > 1:
                     mvd = [att for att in relation.attributes if att.name == child]
-                    return (attribute, mvd)
+                    return (outer_attribute, mvd)
 
-    return True
+    return (None, None)
 
 def normalize_to_5NF(relations: List[Relation]) -> List[Relation]:
     # Ensure relation is normalized to lower normal forms first

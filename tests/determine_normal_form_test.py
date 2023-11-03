@@ -354,8 +354,7 @@ class Determine_Normal_Form_Test(unittest.TestCase):
             Attribute(name="Course", data_type="varchar(50)", isAtomic=True)
         ]
         test_dependencies = [
-            Dependency(parent="Course", children=["CourseStart","CourseEnd"]),
-            Dependency(parent="Course", children=["Professor"])
+            Dependency(parent="Course", children=["CourseStart","CourseEnd","Professor"])
         ]
         test_relation= Relation(
             name="test_relation",

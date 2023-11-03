@@ -205,6 +205,39 @@ class Normalize_Test(unittest.TestCase):
         # Assert
         for relation in actual:
             self.assertTrue(isRelationInBCNF(relation))
-
+    def test_given_BCNF_Normalize_to_4NF(self):
+        # Arrange
+        # Course* -> CourseStart, CourseEnd
+        # Course* ->-> Professor
+        test_attributes = [
+            Attribute(name="Course", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="Professor", data_type="varchar(50)", isAtomic=True),
+            Attribute(name="CourseStart", data_type="date", isAtomic=True),
+            Attribute(name="CourseEnd", data_type="date", isAtomic=True)
+        ]
+        test_tuples = [
+            ["Math101","Dr.Smith","3/1/2023","5/30/2023"],
+            ["Math101","Dr.Jones","3/1/2023","5/30/2023"],
+            ["Math101","Dr.Watson","3/1/2023","5/30/2023"]
+        ]
+        test_primary_keys = [
+            Attribute(name="Course", data_type="varchar(50)", isAtomic=True)
+        ]
+        test_dependencies = [
+            Dependency(parent="Course", children=["CourseStart","CourseEnd"]),
+            Dependency(parent="Course", children=["Professor"])
+        ]
+        test_relation= Relation(
+            name="test_relation",
+            attributes=test_attributes,
+            tuples=test_tuples,
+            primary_keys=test_primary_keys,
+            dependencies=test_dependencies
+        )
+        # Act
+        actual = normalize_to_4NF(test_relation)
+        # Assert
+        for relation in actual:
+            self.assertTrue(isRelationIn4NF(relation))
 if __name__ == '__main__':
     unittest.main()
